@@ -1,0 +1,66 @@
+# ==========================================
+# Dependencies
+# ==========================================
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# ==========================================
+# Environment Variables / Secrets
+# ==========================================
+.env
+.env.*
+!.env.example
+
+client/.env
+client/.env.*
+!.client/.env.example
+
+server/.env
+server/.env.*
+!.server/.env.example
+
+# ==========================================
+# Build / Production
+# ==========================================
+dist/
+build/
+client/dist/
+server/dist/
+
+# ==========================================
+# Logs
+# ==========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ==========================================
+# IDE
+# ==========================================
+.vscode/
+.idea/
+
+# ==========================================
+# OS
+# ==========================================
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# Temporary / Backup
+# ==========================================
+*.tmp
+*.temp
+*.bak
+
+# ==========================================
+# Archives
+# ==========================================
+*.zip
+# Local backup / temporary project copy
+newcheck/
+
+# Database backups
+server/*backup*.sql
