@@ -1,96 +1,177 @@
-import { ArrowRight, MapPin, Star } from "lucide-react";
+import {
+  ArrowRight,
+  MapPin,
+  Star,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 import Container from "../ui/Container";
-import SectionTitle from "../ui/SectionTitle";
 import { restaurants } from "../../data/mock/restaurants";
 
+import fallbackImage from "../../assets/images/destinations/coxs-bazar-2.jpg";
+
 const PopularRestaurants = () => {
-  const featuredRestaurants = restaurants.filter((restaurant) => restaurant.featured).slice(0, 3);
+  const featuredRestaurants = restaurants
+    .filter((restaurant) => restaurant.featured)
+    .slice(0, 3);
 
   return (
-    <section className="bg-white py-20">
+    <section className="bg-white py-20 sm:py-24">
       <Container>
-        <SectionTitle
-          title="Popular Restaurants"
-          subtitle="Fresh flavors, local tastes and memorable dining experiences"
-        />
 
-        <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {featuredRestaurants.map((restaurant) => (
-            <div
-              key={restaurant.id}
-              className="group overflow-hidden rounded-3xl bg-gray-50 shadow-md transition duration-300 hover:-translate-y-2 hover:shadow-xl"
-            >
-              <div className="relative overflow-hidden">
-                <img
-                  src={restaurant.image}
-                  alt={restaurant.name}
-                  className="h-64 w-full object-cover transition duration-500 group-hover:scale-110"
-                />
+        {/* HEADER */}
+        <div className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
 
-                <span className="absolute left-4 top-4 rounded-full bg-blue-700 px-3 py-1 text-xs font-semibold text-white">
-                  Featured
-                </span>
-              </div>
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <span className="h-px w-7 bg-[#e99a36]" />
 
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-2xl font-bold text-gray-900">
-                    {restaurant.name}
-                  </h3>
-                </div>
-
-                <div className="mt-3 flex items-center gap-2 text-gray-500">
-                  <MapPin size={16} />
-                  <span>
-                    {restaurant.district}, {restaurant.division}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center gap-2 text-gray-600">
-                  <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">{restaurant.rating}</span>
-                  <span>({restaurant.totalReviews})</span>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {restaurant.cuisine.slice(0, 2).map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-5 flex items-center justify-between">
-                  <span className="text-lg font-bold text-blue-700">
-                    {restaurant.priceRange}
-                  </span>
-
-                  <Link
-                    to={`/restaurants/${restaurant.slug}`}
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition hover:text-blue-800"
-                  >
-                    View details
-                    <ArrowRight size={16} />
-                  </Link>
-                </div>
-              </div>
+              <span className="text-[10px] font-bold uppercase tracking-[2.5px] text-[#1f5b43]">
+                Taste Bangladesh
+              </span>
             </div>
-          ))}
-        </div>
 
-        <div className="mt-10 text-center">
+            <h2 className="text-3xl font-extrabold tracking-tight text-[#172c23] sm:text-4xl">
+              Popular Restaurants
+            </h2>
+
+            <p className="mt-2 max-w-xl text-sm text-gray-500 sm:text-base">
+              Discover local flavors, seafood, cafes and memorable dining
+              experiences across Bangladesh.
+            </p>
+          </div>
+
           <Link
             to="/restaurants"
-            className="inline-flex items-center justify-center rounded-full bg-blue-700 px-6 py-3 font-semibold text-white transition hover:bg-blue-800"
+            className="group inline-flex items-center gap-2 self-start text-sm font-bold text-[#1f5b43] sm:self-auto"
           >
-            Explore all restaurants
+            View All Restaurants
+
+            <ArrowRight
+              size={17}
+              className="transition-transform group-hover:translate-x-1"
+            />
           </Link>
+
         </div>
+
+        {/* CARDS */}
+        {featuredRestaurants.length > 0 ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
+            {featuredRestaurants.map((restaurant) => (
+              <article
+                key={restaurant.id}
+                className="group overflow-hidden rounded-[24px] border border-[#e7e5dc] bg-[#fbfbf8] transition-all duration-400 hover:-translate-y-1 hover:bg-white hover:shadow-[0_18px_42px_rgba(20,50,35,0.12)]"
+              >
+
+                {/* IMAGE */}
+                <div className="relative h-[235px] overflow-hidden">
+
+                  <img
+                    src={restaurant.image}
+                    alt={restaurant.name}
+                    onError={(event) => {
+                      event.currentTarget.src = fallbackImage;
+                    }}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
+
+                  {/* RATING */}
+                  <div className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-[#25362d]">
+                    <Star
+                      size={13}
+                      fill="currentColor"
+                      className="text-[#e99a36]"
+                    />
+                    {restaurant.rating}
+                  </div>
+
+                  {/* FEATURED */}
+                  <span className="absolute right-4 top-4 rounded-full bg-[#1f5b43]/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                    Featured
+                  </span>
+
+                  {/* NAME */}
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+
+                    <h3 className="text-xl font-bold">
+                      {restaurant.name}
+                    </h3>
+
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-white/85">
+                      <MapPin size={13} />
+
+                      {restaurant.district}, {restaurant.division}
+                    </div>
+
+                  </div>
+
+                </div>
+
+                {/* CONTENT */}
+                <div className="p-5">
+
+                  <p className="line-clamp-2 text-sm leading-6 text-gray-500">
+                    {restaurant.description}
+                  </p>
+
+                  {/* CUISINE */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+
+                    {restaurant.cuisine
+                      .slice(0, 2)
+                      .map((item) => (
+                        <span
+                          key={item}
+                          className="rounded-full bg-[#edf3ee] px-3 py-1 text-[10px] font-semibold text-[#1f5b43]"
+                        >
+                          {item}
+                        </span>
+                      ))}
+
+                  </div>
+
+                  {/* BOTTOM */}
+                  <div className="mt-5 flex items-center justify-between">
+
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-gray-400">
+                        Price range
+                      </p>
+
+                      <p className="mt-1 text-sm font-extrabold text-[#1f5b43]">
+                        {restaurant.priceRange}
+                      </p>
+                    </div>
+
+                    <Link
+                      to={`/restaurants/${restaurant.slug}`}
+                      className="group/button flex h-10 w-10 items-center justify-center rounded-full bg-[#edf3ee] text-[#1f5b43] transition hover:bg-[#1f5b43] hover:text-white"
+                      aria-label={`View ${restaurant.name}`}
+                    >
+                      <ArrowRight
+                        size={17}
+                        className="transition-transform group-hover/button:translate-x-0.5"
+                      />
+                    </Link>
+
+                  </div>
+
+                </div>
+
+              </article>
+            ))}
+
+          </div>
+        ) : (
+          <div className="rounded-[24px] border border-dashed border-[#d8d7ce] bg-[#fbfbf8] p-10 text-center text-sm text-gray-500">
+            Restaurants will appear here once they are added.
+          </div>
+        )}
+
       </Container>
     </section>
   );

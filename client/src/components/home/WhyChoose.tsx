@@ -1,98 +1,123 @@
 import Container from "../ui/Container";
 import {
-  FaMapMarkedAlt,
-  FaRobot,
-  FaHotel,
-  FaShieldAlt,
-  FaCloudSun,
-  FaWallet,
-} from "react-icons/fa";
+  Map,
+  Bot,
+  Hotel,
+  ShieldCheck,
+  CloudSun,
+  WalletCards,
+  ArrowRight,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 const features = [
   {
-    icon: <FaMapMarkedAlt size={40} />,
+    icon: Map,
     title: "Explore All 64 Districts",
     description:
       "Discover beaches, hills, tea gardens, historical sites, islands, forests and hidden gems across Bangladesh.",
   },
   {
-    icon: <FaRobot size={40} />,
+    icon: Bot,
     title: "AI Travel Assistant",
     description:
-      "Receive smart destination recommendations, travel plans and personalized suggestions.",
+      "Get smart destination recommendations, travel plans and personalized travel suggestions.",
   },
   {
-    icon: <FaHotel size={40} />,
+    icon: Hotel,
     title: "Hotels & Accommodation",
     description:
-      "Search verified hotels, resorts and guest houses with ratings and reviews.",
+      "Find hotels, resorts and guest houses with useful information, ratings and reviews.",
   },
   {
-    icon: <FaShieldAlt size={40} />,
+    icon: ShieldCheck,
     title: "Travel Safely",
     description:
-      "Quickly access emergency contacts, hospitals, police stations and travel safety information.",
+      "Quickly access emergency contacts, hospitals, police stations and essential safety information.",
   },
   {
-    icon: <FaCloudSun size={40} />,
+    icon: CloudSun,
     title: "Live Weather Updates",
     description:
-      "Check weather forecasts before planning your trip to avoid unexpected conditions.",
+      "Check weather conditions before your journey and plan your trip more comfortably.",
   },
   {
-    icon: <FaWallet size={40} />,
+    icon: WalletCards,
     title: "Budget Friendly Planning",
     description:
-      "Estimate transportation, accommodation and food expenses before you travel.",
+      "Plan transportation, accommodation and food expenses before you start your journey.",
   },
 ];
 
 const WhyChoose = () => {
   return (
-    <section className="py-24 bg-gray-50">
+    <section className="bg-white py-20 sm:py-24">
       <Container>
-        <div className="text-center max-w-3xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-800">
-            Why Choose TripDaoBD?
+
+        {/* HEADER */}
+        <div className="mx-auto max-w-2xl text-center">
+
+          <div className="mb-3 flex items-center justify-center gap-2">
+            <span className="h-px w-7 bg-[#e99a36]" />
+
+            <span className="text-[10px] font-bold uppercase tracking-[2.5px] text-[#1f5b43]">
+              Why TripDaoBD
+            </span>
+
+            <span className="h-px w-7 bg-[#e99a36]" />
+          </div>
+
+          <h2 className="text-3xl font-extrabold tracking-tight text-[#172c23] sm:text-4xl">
+            Everything You Need to Travel Better
           </h2>
 
-          <p className="mt-6 text-lg text-gray-600">
-            TripDaoBD brings together everything you need for exploring
-            Bangladesh—from discovering destinations to planning trips,
-            finding hotels, staying safe, and making your journey easier.
+          <p className="mt-4 text-sm leading-6 text-gray-500 sm:text-base">
+            TripDaoBD brings destinations, planning tools, accommodation,
+            safety information and travel assistance together in one place.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-2xl shadow-lg p-8 hover:-translate-y-2 hover:shadow-2xl transition duration-300"
-            >
-              <div className="text-blue-700 mb-5">
-                {feature.icon}
+        {/* FEATURES */}
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => {
+            const Icon = feature.icon;
+
+            return (
+              <div
+                key={feature.title}
+                className="group rounded-[22px] border border-[#e8e7df] bg-[#fbfbf8] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#cddbd2] hover:bg-white hover:shadow-[0_16px_40px_rgba(20,60,40,0.09)]"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#edf3ee] text-[#1f5b43] transition-colors duration-300 group-hover:bg-[#1f5b43] group-hover:text-white">
+                  <Icon size={21} strokeWidth={1.8} />
+                </div>
+
+                <h3 className="mt-5 text-lg font-bold text-[#1d3128]">
+                  {feature.title}
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-gray-500">
+                  {feature.description}
+                </p>
               </div>
-
-              <h3 className="text-2xl font-bold text-gray-800">
-                {feature.title}
-              </h3>
-
-              <p className="mt-4 text-gray-600 leading-7">
-                {feature.description}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        <div className="text-center mt-14">
+        {/* BUTTON */}
+        <div className="mt-10 text-center">
           <Link
             to="/features"
-            className="inline-block bg-blue-700 hover:bg-blue-800 text-white px-8 py-4 rounded-xl font-semibold transition duration-300"
+            className="group inline-flex items-center gap-2 rounded-full border border-[#1f5b43] px-6 py-3 text-sm font-bold text-[#1f5b43] transition hover:bg-[#1f5b43] hover:text-white"
           >
-            Explore All Features →
+            Explore All Features
+
+            <ArrowRight
+              size={16}
+              className="transition-transform group-hover:translate-x-1"
+            />
           </Link>
         </div>
+
       </Container>
     </section>
   );

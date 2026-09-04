@@ -1,4 +1,3 @@
-import Container from "../ui/Container";
 import {
   Waves,
   Mountain,
@@ -8,73 +7,93 @@ import {
   Sailboat,
   Church,
   Droplets,
+  ArrowRight,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import Container from "../ui/Container";
+import { categories } from "../../data/mock/categories";
 
-const categories = [
-  {
-    title: "Beach",
-    icon: <Waves size={40} />,
-  },
-  {
-    title: "Mountain",
-    icon: <Mountain size={40} />,
-  },
-  {
-    title: "Forest",
-    icon: <Trees size={40} />,
-  },
-  {
-    title: "Historical",
-    icon: <Landmark size={40} />,
-  },
-  {
-    title: "Island",
-    icon: <TreePalm size={40} />,
-  },
-  {
-    title: "River",
-    icon: <Sailboat size={40} />,
-  },
-  {
-    title: "Religious",
-    icon: <Church size={40} />,
-  },
-  {
-    title: "Waterfall",
-    icon: <Droplets size={40} />,
-  },
-];
+const iconMap: Record<string, React.ElementType> = {
+  Beach: Waves,
+  Mountain: Mountain,
+  Forest: Trees,
+  Historical: Landmark,
+  "Tea Garden": Trees,
+  Island: TreePalm,
+  Haor: Sailboat,
+  Waterfall: Droplets,
+  Religious: Church,
+};
 
 const Categories = () => {
   return (
-    <section className="py-20 bg-gray-50">
+    <section className="bg-white py-20 sm:py-24">
       <Container>
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900">
-            Explore by Category
-          </h2>
 
-          <p className="text-gray-600 mt-3">
-            Find destinations based on your travel interests.
-          </p>
-        </div>
+        {/* ================= HEADER ================= */}
+        <div className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {categories.map((category) => (
-            <div
-              key={category.title}
-              className="bg-white rounded-2xl p-8 shadow-md hover:shadow-xl hover:-translate-y-2 transition duration-300 text-center cursor-pointer"
-            >
-              <div className="flex justify-center text-blue-700 mb-4">
-                {category.icon}
-              </div>
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <span className="h-px w-7 bg-[#e99a36]" />
 
-              <h3 className="font-semibold text-lg">
-                {category.title}
-              </h3>
+              <span className="text-[10px] font-bold uppercase tracking-[2.5px] text-[#1f5b43]">
+                Find Your Experience
+              </span>
             </div>
-          ))}
+
+            <h2 className="text-3xl font-extrabold tracking-tight text-[#172c23] sm:text-4xl">
+              Explore by Category
+            </h2>
+
+            <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500 sm:text-base">
+              Choose what inspires you and discover the perfect place to
+              explore.
+            </p>
+          </div>
+
+          <Link
+            to="/explore"
+            className="group inline-flex items-center gap-2 self-start text-sm font-bold text-[#1f5b43] sm:self-auto"
+          >
+            Explore All
+
+            <ArrowRight
+              size={17}
+              className="transition-transform group-hover:translate-x-1"
+            />
+          </Link>
         </div>
+
+        {/* ================= CATEGORY LIST ================= */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+
+          {categories.map((category) => {
+            const Icon = iconMap[category.name] || Landmark;
+
+            return (
+              <Link
+                key={category.id}
+                to={`/explore?category=${encodeURIComponent(category.name)}`}
+                className="group flex min-h-[145px] flex-col items-center justify-center rounded-[22px] border border-[#e9e9e3] bg-[#fbfbf8] px-3 py-5 text-center transition-all duration-300 hover:-translate-y-1 hover:border-[#cfded4] hover:bg-[#edf3ee] hover:shadow-[0_12px_30px_rgba(20,60,40,0.08)]"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#1f5b43] shadow-sm transition-all duration-300 group-hover:bg-[#1f5b43] group-hover:text-white">
+                  <Icon size={22} strokeWidth={1.8} />
+                </div>
+
+                <h3 className="mt-4 text-sm font-bold text-[#25372e]">
+                  {category.name}
+                </h3>
+
+                <p className="mt-1 text-[10px] text-gray-400">
+                  {category.totalPlaces} places
+                </p>
+              </Link>
+            );
+          })}
+
+        </div>
+
       </Container>
     </section>
   );

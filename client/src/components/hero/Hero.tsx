@@ -1,48 +1,99 @@
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 import heroImage from "../../assets/images/hero.jpg";
 
 const Hero = () => {
   return (
-    <section className="relative">
-      <div className="relative h-[560px] lg:h-[640px] overflow-hidden">
-        <img
-          src={heroImage}
-          alt="Sunset over the forested hills of Bangladesh"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+    <section className="relative min-h-[720px] overflow-hidden bg-[#183d2e] sm:min-h-[760px]">
 
-        {/* Scrim so dark text stays legible over the photo */}
-        <div className="absolute inset-0 bg-gradient-to-r from-paper via-paper/75 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-paper/90 via-transparent to-transparent" />
+      {/* ================= HERO IMAGE ================= */}
+      <img
+        src={heroImage}
+        alt="Beautiful Bangladesh landscape"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
 
-        <div className="relative h-full max-w-7xl mx-auto px-5 lg:px-8 flex items-center">
-          <div className="max-w-xl animate-rise-in">
-            <p className="text-sm font-semibold tracking-wide text-ink-soft">
-              Explore Bangladesh
+      {/* ================= OVERLAYS ================= */}
+      <div className="absolute inset-0 bg-black/20" />
+
+      <div className="absolute inset-0 bg-gradient-to-r from-[#102b20]/80 via-[#183d2e]/35 to-transparent" />
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
+
+      {/* ================= DECORATIVE SHAPE ================= */}
+      <div className="absolute -bottom-32 -left-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+      <div className="absolute -right-20 top-24 h-72 w-72 rounded-full bg-[#e99a36]/10 blur-3xl" />
+
+      {/* ================= CONTENT ================= */}
+      <div className="relative z-10 mx-auto flex min-h-[720px] max-w-7xl items-center px-5 pb-32 pt-28 sm:pb-44 sm:min-h-[760px] sm:px-8 sm:pb-44">
+
+        <div className="max-w-[700px]">
+
+          {/* Eyebrow */}
+          <div className="mb-5 flex items-center gap-3">
+            <span className="h-px w-9 bg-[#e99a36]" />
+
+            <p className="text-[11px] font-bold tracking-[3px] text-[#f5b45c] sm:text-xs">
+              EXPLORE BANGLADESH
             </p>
+          </div>
 
-            <h1 className="mt-4 text-4xl sm:text-5xl lg:text-[3.4rem] font-semibold leading-[1.08] text-ink text-balance">
-              Discover Bangladesh.
-              <br />
-              <span className="text-forest">Travel it prepared.</span>
-            </h1>
+          {/* Heading */}
+          <h1 className="max-w-3xl text-[42px] font-extrabold sm:text-6xl lg:text-[76px] leading-[1.04] tracking-[-1.5px] text-white sm:text-6xl lg:text-[76px]">
 
-            <p className="mt-6 text-lg text-ink-soft leading-relaxed max-w-md">
-              Beaches, hills and tea gardens matched with a place to stay,
-              a way to get there, and the nearest help if you need it.
-            </p>
+            Discover Nature.
+            <br />
+
+            <span className="text-[#e8a044]">
+              Find Your Escape.
+            </span>
+          </h1>
+
+          {/* Description */}
+          <p className="mt-6 max-w-xl text-base leading-7 text-white/85 sm:text-lg">
+            Discover breathtaking beaches, green hills, peaceful
+            forests and hidden gems across Bangladesh.
+            Your next adventure starts here.
+          </p>
+
+          {/* Buttons */}
+          <div className="mt-8 flex flex-wrap items-center gap-3">
 
             <Link
               to="/explore"
-              className="mt-8 inline-flex items-center gap-2 bg-amber hover:bg-amber-dark text-ink px-7 py-3.5 rounded-full font-semibold transition-colors"
+              className="group inline-flex items-center gap-3 rounded-full bg-[#e99a36] px-6 py-3.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#d98925] hover:shadow-xl sm:px-7"
             >
-              Explore now
-              <ArrowRight size={18} />
+              Explore Destinations
+
+              <ArrowRight
+                size={18}
+                className="transition-transform group-hover:translate-x-1"
+              />
             </Link>
+
+            <Link
+              to="/features"
+              className="group inline-flex items-center gap-3 rounded-full border border-white/40 bg-white/10 px-5 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white hover:text-[#183d2e]"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#183d2e]">
+                <Play size={12} fill="currentColor" />
+              </span>
+
+              Discover More
+            </Link>
+          </div>
+
+          {/* Small trust line */}
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-white/75">
+            <span>✓ Local destinations</span>
+            <span>✓ Easy booking</span>
+            <span>✓ Trusted travel experience</span>
           </div>
         </div>
       </div>
+
+      {/* ================= BOTTOM FADE ================= */}
+      <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[#f7f5ef] to-transparent" />
     </section>
   );
 };

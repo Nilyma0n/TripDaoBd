@@ -9,7 +9,7 @@
    and golden-hour beach light.
 =================================================== */
 
-@theme {
+:root {
   --font-display: "Fraunces", ui-serif, Georgia, serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
