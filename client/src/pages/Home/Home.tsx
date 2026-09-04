@@ -5,6 +5,7 @@ import Categories from "../../components/home/Categories";
 import FeaturedDestinations from "../../components/home/FeaturedDestinations";
 import WhyChoose from "../../components/home/WhyChoose";
 import PopularHotels from "../../components/home/PopularHotels";
+import PopularRestaurants from "../../components/home/PopularRestaurants";
 import TravelBlog from "../../components/home/TravelBlog";
 import EmergencySection from "../../components/home/EmergencySection";
 import Newsletter from "../../components/home/Newsletter";
@@ -19,6 +20,7 @@ const Home = () => {
       <FeaturedDestinations />
       <WhyChoose />
       <PopularHotels />
+      <PopularRestaurants />
       <TravelBlog />
       <EmergencySection />
       <Newsletter />

@@ -22,6 +22,11 @@ import Hotels from "../pages/Hotels/Hotels";
 import HotelDetails from "../pages/Hotels/HotelDetails";
 
 // =====================================================
+// RESTAURANTS
+// =====================================================
+import Restaurants from "../pages/Restaurants/Restaurants";
+
+// =====================================================
 // TRANSPORTATION
 // =====================================================
 import Transportation from "../pages/Transportation/Transportation";
@@ -77,6 +82,11 @@ import DeleteAccount from "../pages/Dashboard/DeleteAccount";
 import Support from "../pages/Dashboard/Support";
 
 // =====================================================
+// NOT FOUND
+// =====================================================
+import NotFound from "../pages/NotFound/NotFound";
+
+// =====================================================
 // ROUTER
 // =====================================================
 
@@ -88,6 +98,7 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <MainLayout />,
+    errorElement: <NotFound />,
 
     children: [
       // ===================================================
@@ -129,6 +140,15 @@ export const router = createBrowserRouter([
       {
         path: "hotels/:slug",
         element: <HotelDetails />,
+      },
+
+      // ===================================================
+      // RESTAURANTS
+      // ===================================================
+
+      {
+        path: "restaurants",
+        element: <Restaurants />,
       },
 
       // ===================================================
@@ -235,6 +255,15 @@ export const router = createBrowserRouter([
       {
         path: "forgot-password",
         element: <ForgotPassword />,
+      },
+
+      // ===================================================
+      // 404 - NOT FOUND (catch-all, must stay last)
+      // ===================================================
+
+      {
+        path: "*",
+        element: <NotFound />,
       },
     ],
   },

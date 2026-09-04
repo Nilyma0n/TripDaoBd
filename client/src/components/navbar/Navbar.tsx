@@ -63,6 +63,13 @@ const Navbar = () => {
           </Link>
 
           <Link
+            to="/restaurants"
+            className="hover:text-blue-700 transition"
+          >
+            Restaurants
+          </Link>
+
+          <Link
             to="/transportation"
             className="hover:text-blue-700 transition"
           >

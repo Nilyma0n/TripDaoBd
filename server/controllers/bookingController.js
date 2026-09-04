@@ -29,28 +29,19 @@ const getAuthenticatedUserId = (req) => {
 // =====================================================
 // HELPER: NORMALIZE DATE
 // =====================================================
-//
-// Handles:
-// - YYYY-MM-DD
-// - YYYY-MM-DD HH:mm:ss
-// - ISO date strings
-// - JavaScript Date objects
-//
-// Always returns YYYY-MM-DD
-// =====================================================
 
 const normalizeDate = (value) => {
   if (!value) {
     return null;
   }
 
-  // If MySQL returns a JavaScript Date object
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) {
       return null;
     }
 
     const year = value.getFullYear();
+
     const month = String(
       value.getMonth() + 1
     ).padStart(2, "0");
@@ -68,7 +59,6 @@ const normalizeDate = (value) => {
     return null;
   }
 
-  // Already YYYY-MM-DD
   const dateOnlyMatch = stringValue.match(
     /^(\d{4})-(\d{2})-(\d{2})$/
   );
@@ -77,7 +67,6 @@ const normalizeDate = (value) => {
     return stringValue;
   }
 
-  // YYYY-MM-DD HH:mm:ss
   const mysqlDateMatch = stringValue.match(
     /^(\d{4})-(\d{2})-(\d{2})/
   );
@@ -86,7 +75,6 @@ const normalizeDate = (value) => {
     return `${mysqlDateMatch[1]}-${mysqlDateMatch[2]}-${mysqlDateMatch[3]}`;
   }
 
-  // ISO / other valid date string
   const parsed = new Date(stringValue);
 
   if (Number.isNaN(parsed.getTime())) {
@@ -94,6 +82,7 @@ const normalizeDate = (value) => {
   }
 
   const year = parsed.getFullYear();
+
   const month = String(
     parsed.getMonth() + 1
   ).padStart(2, "0");
@@ -108,9 +97,6 @@ const normalizeDate = (value) => {
 
 // =====================================================
 // HELPER: CREATE LOCAL DATE
-// =====================================================
-//
-// Prevents timezone-related date calculation problems.
 // =====================================================
 
 const createLocalDate = (value) => {
@@ -156,12 +142,10 @@ const calculateNights = (
   const difference =
     end.getTime() - start.getTime();
 
-  const nights = Math.round(
+  return Math.round(
     difference /
       (1000 * 60 * 60 * 24)
   );
-
-  return nights;
 };
 
 
@@ -179,6 +163,42 @@ const roundMoney = (amount) => {
 
 
 // =====================================================
+// HELPER: CREATE NOTIFICATION
+// =====================================================
+
+const createBookingNotification = async ({
+  userId,
+  title,
+  message,
+  link = "/dashboard/bookings",
+}) => {
+  if (!userId) {
+    return;
+  }
+
+  await pool.query(
+    `
+    INSERT INTO notifications (
+      user_id,
+      title,
+      message,
+      type,
+      link
+    )
+    VALUES (?, ?, ?, ?, ?)
+    `,
+    [
+      userId,
+      title,
+      message,
+      "booking",
+      link,
+    ]
+  );
+};
+
+
+// =====================================================
 // CREATE BOOKING
 // POST /api/bookings
 // =====================================================
@@ -188,10 +208,6 @@ export const createBooking = async (
   res
 ) => {
   try {
-    // =================================================
-    // AUTHENTICATION
-    // =================================================
-
     const userId =
       getAuthenticatedUserId(req);
 
@@ -202,11 +218,6 @@ export const createBooking = async (
           "User authentication information is missing.",
       });
     }
-
-
-    // =================================================
-    // GET REQUEST DATA
-    // =================================================
 
     const {
       full_name,
@@ -221,11 +232,6 @@ export const createBooking = async (
       location,
     } = req.body;
 
-
-    // =================================================
-    // REQUIRED FIELD VALIDATION
-    // =================================================
-
     if (
       !full_name ||
       !email ||
@@ -239,11 +245,6 @@ export const createBooking = async (
           "Please provide full name, email, phone, check-in and check-out dates.",
       });
     }
-
-
-    // =================================================
-    // NORMALIZE DATES
-    // =================================================
 
     const normalizedCheckIn =
       normalizeDate(check_in);
@@ -261,11 +262,6 @@ export const createBooking = async (
           "Please provide valid check-in and check-out dates.",
       });
     }
-
-
-    // =================================================
-    // GUEST / ROOM VALIDATION
-    // =================================================
 
     const guestCount =
       Number(guests) || 1;
@@ -289,21 +285,11 @@ export const createBooking = async (
       });
     }
 
-
-    // =================================================
-    // CALCULATE NUMBER OF NIGHTS
-    // =================================================
-
     const nights =
       calculateNights(
         normalizedCheckIn,
         normalizedCheckOut
       );
-
-
-    // =================================================
-    // DATE VALIDATION
-    // =================================================
 
     if (nights <= 0) {
       return res.status(400).json({
@@ -313,11 +299,6 @@ export const createBooking = async (
       });
     }
 
-
-    // =================================================
-    // MINIMUM NIGHT VALIDATION
-    // =================================================
-
     if (nights < MIN_NIGHTS) {
       return res.status(400).json({
         success: false,
@@ -326,18 +307,7 @@ export const createBooking = async (
       });
     }
 
-
-    // =================================================
-    // CALCULATE BOOKING PRICE
-    // =================================================
-    //
-    // Backend NEVER trusts frontend price values.
-    //
-    // Room subtotal =
-    // Base room price × rooms × nights
-    //
-    // =================================================
-
+    // Backend calculates price.
     const roomSubtotal =
       roundMoney(
         BASE_ROOM_PRICE *
@@ -345,21 +315,11 @@ export const createBooking = async (
           nights
       );
 
-
-    // =================================================
-    // SERVICE FEE
-    // =================================================
-
     const serviceFee =
       roundMoney(
         roomSubtotal *
           SERVICE_FEE_RATE
       );
-
-
-    // =================================================
-    // VAT
-    // =================================================
 
     const vatAmount =
       roundMoney(
@@ -368,22 +328,12 @@ export const createBooking = async (
           VAT_RATE
       );
 
-
-    // =================================================
-    // TOTAL
-    // =================================================
-
     const totalAmount =
       roundMoney(
         roomSubtotal +
           serviceFee +
           vatAmount
       );
-
-
-    // =================================================
-    // DESTINATION DEFAULT
-    // =================================================
 
     const bookingDestination =
       destination ||
@@ -392,11 +342,6 @@ export const createBooking = async (
     const bookingLocation =
       location ||
       "Cox's Bazar, Bangladesh";
-
-
-    // =================================================
-    // INSERT BOOKING
-    // =================================================
 
     const [result] =
       await pool.query(
@@ -441,11 +386,6 @@ export const createBooking = async (
         ]
       );
 
-
-    // =================================================
-    // GET CREATED BOOKING
-    // =================================================
-
     const [rows] =
       await pool.query(
         `
@@ -457,7 +397,6 @@ export const createBooking = async (
         [result.insertId]
       );
 
-
     if (rows.length === 0) {
       return res.status(500).json({
         success: false,
@@ -466,45 +405,20 @@ export const createBooking = async (
       });
     }
 
-
     const createdBooking =
       rows[0];
 
+    await createBookingNotification({
+      userId,
 
-    // =================================================
-    // CREATE BOOKING NOTIFICATION
-    // =================================================
-
-    await pool.query(
-      `
-      INSERT INTO notifications (
-        user_id,
-        title,
-        message,
-        type,
-        link
-      )
-      VALUES (?, ?, ?, ?, ?)
-      `,
-      [
-        userId,
-
+      title:
         "Booking Request Submitted",
 
+      message:
         `Your booking for ${bookingDestination} from ${normalizedCheckIn} to ${normalizedCheckOut} has been submitted successfully. Booking #${String(
           result.insertId
         ).padStart(5, "0")}.`,
-
-        "booking",
-
-        "/dashboard/bookings",
-      ]
-    );
-
-
-    // =================================================
-    // RESPONSE
-    // =================================================
+    });
 
     return res.status(201).json({
       success: true,
@@ -512,13 +426,15 @@ export const createBooking = async (
       message:
         "Booking request submitted successfully.",
 
-      booking: createdBooking,
+      booking:
+        createdBooking,
 
       pricing: {
         room_price_per_night:
           BASE_ROOM_PRICE,
 
-        rooms: roomCount,
+        rooms:
+          roomCount,
 
         nights,
 
@@ -536,7 +452,8 @@ export const createBooking = async (
       },
 
       payment: {
-        status: "Pending",
+        status:
+          "Pending",
 
         message:
           "Payment can be completed after your booking is confirmed.",
@@ -580,7 +497,6 @@ export const getMyBookings = async (
       });
     }
 
-
     const [rows] =
       await pool.query(
         `
@@ -592,11 +508,12 @@ export const getMyBookings = async (
         [userId]
       );
 
-
     return res.status(200).json({
       success: true,
-      count: rows.length,
-      bookings: rows,
+      count:
+        rows.length,
+      bookings:
+        rows,
     });
 
   } catch (error) {
@@ -631,11 +548,6 @@ export const getBookingById = async (
     const bookingId =
       req.params.id;
 
-
-    // =================================================
-    // AUTHENTICATION
-    // =================================================
-
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -643,11 +555,6 @@ export const getBookingById = async (
           "User authentication information is missing.",
       });
     }
-
-
-    // =================================================
-    // GET BOOKING
-    // =================================================
 
     const [rows] =
       await pool.query(
@@ -664,7 +571,6 @@ export const getBookingById = async (
         ]
       );
 
-
     if (rows.length === 0) {
       return res.status(404).json({
         success: false,
@@ -673,14 +579,8 @@ export const getBookingById = async (
       });
     }
 
-
     const booking =
       rows[0];
-
-
-    // =================================================
-    // NORMALIZE DATES
-    // =================================================
 
     const normalizedCheckIn =
       normalizeDate(
@@ -692,21 +592,11 @@ export const getBookingById = async (
         booking.check_out
       );
 
-
-    // =================================================
-    // CALCULATE NIGHTS
-    // =================================================
-
     const nights =
       calculateNights(
         normalizedCheckIn,
         normalizedCheckOut
       );
-
-
-    // =================================================
-    // RETURN RESPONSE
-    // =================================================
 
     return res.status(200).json({
       success: true,
@@ -769,7 +659,7 @@ export const getBookingById = async (
 
 
 // =====================================================
-// CANCEL BOOKING
+// CANCEL OWN BOOKING
 // PUT /api/bookings/:id/cancel
 // =====================================================
 
@@ -784,11 +674,6 @@ export const cancelBooking = async (
     const bookingId =
       req.params.id;
 
-
-    // =================================================
-    // AUTHENTICATION
-    // =================================================
-
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -796,11 +681,6 @@ export const cancelBooking = async (
           "User authentication information is missing.",
       });
     }
-
-
-    // =================================================
-    // CHECK BOOKING
-    // =================================================
 
     const [bookingRows] =
       await pool.query(
@@ -817,7 +697,6 @@ export const cancelBooking = async (
         ]
       );
 
-
     if (bookingRows.length === 0) {
       return res.status(404).json({
         success: false,
@@ -826,14 +705,8 @@ export const cancelBooking = async (
       });
     }
 
-
     const booking =
       bookingRows[0];
-
-
-    // =================================================
-    // CHECK STATUS
-    // =================================================
 
     if (
       booking.status !== "Pending" &&
@@ -845,11 +718,6 @@ export const cancelBooking = async (
           "This booking cannot be cancelled.",
       });
     }
-
-
-    // =================================================
-    // CANCEL BOOKING
-    // =================================================
 
     const [result] =
       await pool.query(
@@ -865,7 +733,6 @@ export const cancelBooking = async (
         ]
       );
 
-
     if (
       result.affectedRows === 0
     ) {
@@ -876,27 +743,13 @@ export const cancelBooking = async (
       });
     }
 
+    await createBookingNotification({
+      userId,
 
-    // =================================================
-    // CREATE CANCELLATION NOTIFICATION
-    // =================================================
-
-    await pool.query(
-      `
-      INSERT INTO notifications (
-        user_id,
-        title,
-        message,
-        type,
-        link
-      )
-      VALUES (?, ?, ?, ?, ?)
-      `,
-      [
-        userId,
-
+      title:
         "Booking Cancelled",
 
+      message:
         `Your booking #${String(
           bookingId
         ).padStart(
@@ -906,17 +759,7 @@ export const cancelBooking = async (
           booking.destination ||
           "your selected destination"
         } has been cancelled successfully.`,
-
-        "booking",
-
-        "/dashboard/bookings",
-      ]
-    );
-
-
-    // =================================================
-    // RESPONSE
-    // =================================================
+    });
 
     return res.status(200).json({
       success: true,
@@ -934,6 +777,434 @@ export const cancelBooking = async (
   } catch (error) {
     console.error(
       "Cancel Booking Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to cancel booking.",
+      error: error.message,
+    });
+  }
+};
+
+
+// =====================================================
+// ADMIN: GET ALL BOOKINGS
+// GET /api/bookings/admin/all
+//
+// Requires:
+// - Authentication
+// - booking.view_all
+// =====================================================
+
+export const getAllBookings = async (
+  req,
+  res
+) => {
+  try {
+    const [rows] =
+      await pool.query(
+        `
+        SELECT
+          b.*,
+          u.full_name AS user_full_name,
+          u.email AS user_email,
+          u.phone AS user_phone
+        FROM bookings b
+        LEFT JOIN users u
+          ON u.id = b.user_id
+        ORDER BY b.created_at DESC
+        `
+      );
+
+    return res.status(200).json({
+      success: true,
+
+      count:
+        rows.length,
+
+      bookings:
+        rows,
+    });
+
+  } catch (error) {
+    console.error(
+      "Get All Bookings Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to load all bookings.",
+      error: error.message,
+    });
+  }
+};
+
+
+// =====================================================
+// ADMIN: CONFIRM BOOKING
+// PUT /api/bookings/admin/:id/confirm
+//
+// Requires:
+// - Authentication
+// - booking.confirm
+// =====================================================
+
+export const confirmBooking = async (
+  req,
+  res
+) => {
+  try {
+    const bookingId =
+      req.params.id;
+
+    const [bookingRows] =
+      await pool.query(
+        `
+        SELECT *
+        FROM bookings
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [bookingId]
+      );
+
+    if (bookingRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Booking not found.",
+      });
+    }
+
+    const booking =
+      bookingRows[0];
+
+    if (
+      booking.status !== "Pending"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          `Booking cannot be confirmed because its current status is "${booking.status}".`,
+      });
+    }
+
+    const [result] =
+      await pool.query(
+        `
+        UPDATE bookings
+        SET status = 'Confirmed'
+        WHERE id = ?
+        AND status = 'Pending'
+        `,
+        [bookingId]
+      );
+
+    if (
+      result.affectedRows === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Booking could not be confirmed.",
+      });
+    }
+
+    await createBookingNotification({
+      userId:
+        booking.user_id,
+
+      title:
+        "Booking Confirmed",
+
+      message:
+        `Your booking #${String(
+          bookingId
+        ).padStart(
+          5,
+          "0"
+        )} for ${
+          booking.destination ||
+          "your selected destination"
+        } has been confirmed.`,
+
+      link:
+        `/dashboard/bookings/${bookingId}`,
+    });
+
+    return res.status(200).json({
+      success: true,
+
+      message:
+        "Booking confirmed successfully.",
+
+      booking_id:
+        bookingId,
+
+      status:
+        "Confirmed",
+    });
+
+  } catch (error) {
+    console.error(
+      "Confirm Booking Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to confirm booking.",
+      error: error.message,
+    });
+  }
+};
+
+
+// =====================================================
+// ADMIN: REJECT BOOKING
+// PUT /api/bookings/admin/:id/reject
+//
+// Requires:
+// - Authentication
+// - booking.reject
+// =====================================================
+
+export const rejectBooking = async (
+  req,
+  res
+) => {
+  try {
+    const bookingId =
+      req.params.id;
+
+    const [bookingRows] =
+      await pool.query(
+        `
+        SELECT *
+        FROM bookings
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [bookingId]
+      );
+
+    if (bookingRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Booking not found.",
+      });
+    }
+
+    const booking =
+      bookingRows[0];
+
+    if (
+      booking.status !== "Pending"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          `Booking cannot be rejected because its current status is "${booking.status}".`,
+      });
+    }
+
+    const [result] =
+      await pool.query(
+        `
+        UPDATE bookings
+        SET status = 'Rejected'
+        WHERE id = ?
+        AND status = 'Pending'
+        `,
+        [bookingId]
+      );
+
+    if (
+      result.affectedRows === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Booking could not be rejected.",
+      });
+    }
+
+    await createBookingNotification({
+      userId:
+        booking.user_id,
+
+      title:
+        "Booking Rejected",
+
+      message:
+        `Your booking #${String(
+          bookingId
+        ).padStart(
+          5,
+          "0"
+        )} for ${
+          booking.destination ||
+          "your selected destination"
+        } has been rejected.`,
+
+      link:
+        `/dashboard/bookings/${bookingId}`,
+    });
+
+    return res.status(200).json({
+      success: true,
+
+      message:
+        "Booking rejected successfully.",
+
+      booking_id:
+        bookingId,
+
+      status:
+        "Rejected",
+    });
+
+  } catch (error) {
+    console.error(
+      "Reject Booking Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to reject booking.",
+      error: error.message,
+    });
+  }
+};
+
+
+// =====================================================
+// ADMIN: CANCEL ANY BOOKING
+// PUT /api/bookings/admin/:id/cancel
+//
+// Requires:
+// - Authentication
+// - booking.cancel_any
+// =====================================================
+
+export const cancelBookingAny = async (
+  req,
+  res
+) => {
+  try {
+    const bookingId =
+      req.params.id;
+
+    const [bookingRows] =
+      await pool.query(
+        `
+        SELECT *
+        FROM bookings
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [bookingId]
+      );
+
+    if (bookingRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Booking not found.",
+      });
+    }
+
+    const booking =
+      bookingRows[0];
+
+    if (
+      booking.status === "Cancelled"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "This booking is already cancelled.",
+      });
+    }
+
+    if (
+      booking.status === "Rejected"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Rejected bookings cannot be cancelled.",
+      });
+    }
+
+    const [result] =
+      await pool.query(
+        `
+        UPDATE bookings
+        SET status = 'Cancelled'
+        WHERE id = ?
+        AND status <> 'Cancelled'
+        `,
+        [bookingId]
+      );
+
+    if (
+      result.affectedRows === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Booking could not be cancelled.",
+      });
+    }
+
+    await createBookingNotification({
+      userId:
+        booking.user_id,
+
+      title:
+        "Booking Cancelled",
+
+      message:
+        `Your booking #${String(
+          bookingId
+        ).padStart(
+          5,
+          "0"
+        )} for ${
+          booking.destination ||
+          "your selected destination"
+        } has been cancelled by the administrator.`,
+
+      link:
+        `/dashboard/bookings/${bookingId}`,
+    });
+
+    return res.status(200).json({
+      success: true,
+
+      message:
+        "Booking cancelled successfully by admin.",
+
+      booking_id:
+        bookingId,
+
+      status:
+        "Cancelled",
+    });
+
+  } catch (error) {
+    console.error(
+      "Admin Cancel Booking Error:",
       error
     );
 

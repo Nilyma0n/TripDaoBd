@@ -27,7 +27,7 @@ export const getAllBookings = async (req, res) => {
     const [rows] = await pool.query(`
       SELECT
         b.*,
-        u.name AS user_name,
+        u.full_name AS user_name,
         u.email AS user_email
       FROM bookings b
       LEFT JOIN users u
@@ -68,7 +68,7 @@ export const getAdminBookingById = async (req, res) => {
       `
       SELECT
         b.*,
-        u.name AS user_name,
+        u.full_name AS user_name,
         u.email AS user_email
       FROM bookings b
       LEFT JOIN users u
