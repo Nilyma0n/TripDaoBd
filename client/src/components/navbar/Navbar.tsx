@@ -1,205 +1,142 @@
-import { Link, useNavigate } from "react-router-dom";
-import {
-  Search,
-  Menu,
-  ChevronDown,
-  Globe,
-  User,
-  LogOut,
-} from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate, NavLink } from "react-router-dom";
+import { Menu, User, LogOut, Compass } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
+import MobileMenu from "../navbar/MobileMenu";
+
+const links = [
+  { to: "/", label: "Home" },
+  { to: "/explore", label: "Explore" },
+  { to: "/hotels", label: "Hotels" },
+  { to: "/transportation", label: "Transport" },
+  { to: "/blog", label: "Blog" },
+  { to: "/emergency", label: "Emergency" },
+];
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
-    // Go back to homepage
     navigate("/");
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-md shadow-md z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between h-20 px-6">
-
-        {/* ================= LOGO ================= */}
-        <Link
-          to="/"
-          className="flex items-center gap-3"
-        >
-          <Globe
-            className="text-blue-700"
-            size={34}
-          />
-
-          <h1 className="text-3xl font-extrabold text-blue-700">
-            TripDaoBD
-          </h1>
-        </Link>
-
-        {/* ================= NAVIGATION ================= */}
-        <nav className="hidden lg:flex items-center gap-7 font-semibold text-gray-700">
-
-          <Link
-            to="/"
-            className="hover:text-blue-700 transition"
-          >
-            Home
+    <>
+      <header className="fixed top-0 left-0 w-full bg-paper-raised/95 backdrop-blur-md border-b border-mist z-50">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-20 px-5 lg:px-8">
+          {/* LOGO */}
+          <Link to="/" className="flex items-center gap-2.5 shrink-0">
+            <Compass className="text-river" size={28} strokeWidth={2} />
+            <span className="font-display text-2xl font-semibold text-river">
+              TripDaoBD
+            </span>
           </Link>
 
-          <Link
-            to="/explore"
-            className="hover:text-blue-700 transition"
-          >
-            Explore
-          </Link>
+          {/* NAVIGATION */}
+          <nav className="hidden lg:flex items-center gap-8 font-medium text-ink-soft">
+            {links.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.to === "/"}
+                className={({ isActive }) =>
+                  `relative py-1 transition-colors ${
+                    isActive ? "text-river" : "hover:text-river"
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
 
-          <Link
-            to="/hotels"
-            className="hover:text-blue-700 transition"
-          >
-            Hotels
-          </Link>
+            {user && (
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                  `relative py-1 transition-colors ${
+                    isActive ? "text-river" : "hover:text-river"
+                  }`
+                }
+              >
+                Dashboard
+              </NavLink>
+            )}
+          </nav>
 
-          <Link
-            to="/restaurants"
-            className="hover:text-blue-700 transition"
-          >
-            Restaurants
-          </Link>
+          {/* RIGHT SIDE */}
+          <div className="flex items-center gap-3">
+            {!user ? (
+              <div className="hidden md:flex items-center gap-3">
+                <Link
+                  to="/login"
+                  className="text-ink font-semibold px-4 py-2.5 hover:text-river transition-colors"
+                >
+                  Log in
+                </Link>
 
-          <Link
-            to="/transportation"
-            className="hover:text-blue-700 transition"
-          >
-            Transportation
-          </Link>
+                <Link
+                  to="/register"
+                  className="bg-brass hover:bg-brass-dark text-ink px-5 py-2.5 rounded-md font-semibold transition-colors"
+                >
+                  Create account
+                </Link>
+              </div>
+            ) : (
+              <div className="hidden md:flex items-center gap-3">
+                <Link
+                  to="/dashboard/profile"
+                  className="flex items-center gap-2 border border-mist px-3 py-2 rounded-full hover:border-tea transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-tea-light text-tea flex items-center justify-center overflow-hidden font-semibold">
+                    {user.profile_image ? (
+                      <img
+                        src={user.profile_image}
+                        alt={user.full_name || "User"}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user.full_name?.charAt(0).toUpperCase() || (
+                        <User size={16} />
+                      )
+                    )}
+                  </div>
+                  <span className="hidden xl:block font-medium text-ink max-w-[110px] truncate">
+                    {user.full_name || "Traveler"}
+                  </span>
+                </Link>
 
-          <Link
-            to="/booking"
-            className="hover:text-blue-700 transition"
-          >
-            Booking
-          </Link>
+                <button
+                  onClick={handleLogout}
+                  title="Log out"
+                  className="flex items-center gap-2 text-brick hover:bg-brick-light px-3 py-2.5 rounded-md transition-colors"
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
+            )}
 
-          <Link
-            to="/blog"
-            className="hover:text-blue-700 transition"
-          >
-            Blog
-          </Link>
-
-          <Link
-            to="/emergency"
-            className="hover:text-blue-700 transition"
-          >
-            Emergency
-          </Link>
-
-          {/* Dashboard */}
-          {user && (
-            <Link
-              to="/dashboard"
-              className="hover:text-blue-700 transition"
+            {/* Mobile Menu Trigger */}
+            <button
+              className="lg:hidden text-ink"
+              aria-label="Open menu"
+              onClick={() => setMobileOpen(true)}
             >
-              Dashboard
-            </Link>
-          )}
-
-          <button className="flex items-center gap-1 hover:text-blue-700 transition">
-            More
-            <ChevronDown size={18} />
-          </button>
-
-        </nav>
-
-        {/* ================= RIGHT SIDE ================= */}
-        <div className="flex items-center gap-3">
-
-          {/* Search */}
-          <button className="hover:text-blue-700 transition">
-            <Search size={22} />
-          </button>
-
-          {!user ? (
-            <>
-              {/* LOGIN */}
-              <Link
-                to="/login"
-                className="border border-blue-700 text-blue-700 px-5 py-2.5 rounded-full font-semibold hover:bg-blue-700 hover:text-white transition"
-              >
-                Login
-              </Link>
-
-              {/* REGISTER */}
-              <Link
-                to="/register"
-                className="bg-blue-700 text-white px-5 py-2.5 rounded-full font-semibold hover:bg-blue-800 transition"
-              >
-                Register
-              </Link>
-            </>
-          ) : (
-            /* ================= LOGGED IN USER ================= */
-            <div className="flex items-center gap-3">
-
-              {/* User Profile */}
-              <Link
-                to="/dashboard/profile"
-                className="flex items-center gap-2 border border-gray-200 px-3 py-2 rounded-full hover:bg-blue-50 transition"
-              >
-
-                {/* Avatar */}
-                <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center overflow-hidden font-bold">
-
-                  {user.profile_image ? (
-                    <img
-                      src={user.profile_image}
-                      alt={user.full_name || "User"}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    user.full_name
-                      ?.charAt(0)
-                      .toUpperCase() || (
-                      <User size={18} />
-                    )
-                  )}
-
-                </div>
-
-                {/* Name */}
-                <span className="hidden xl:block font-semibold text-gray-700 max-w-[120px] truncate">
-                  {user.full_name || "Traveler"}
-                </span>
-
-              </Link>
-
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 bg-red-50 text-red-600 px-4 py-2.5 rounded-full font-semibold hover:bg-red-600 hover:text-white transition"
-                title="Logout"
-              >
-                <LogOut size={18} />
-                <span className="hidden xl:block">
-                  Logout
-                </span>
-              </button>
-
-            </div>
-          )}
-
-          {/* Mobile Menu */}
-          <button className="lg:hidden">
-            <Menu size={28} />
-          </button>
-
+              <Menu size={26} />
+            </button>
+          </div>
         </div>
+      </header>
 
-      </div>
-    </header>
+      <MobileMenu
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        user={user}
+        onLogout={handleLogout}
+      />
+    </>
   );
 };
 

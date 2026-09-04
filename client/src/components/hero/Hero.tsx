@@ -1,54 +1,46 @@
 import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
+import heroImage from "../../assets/images/hero.jpg";
 
 const Hero = () => {
   return (
-    <section
-      className="relative h-screen bg-cover bg-center"
-      style={{
-        backgroundImage:
-          "url('https://beautifulbangladesh.gov.bd/storage/backend/images/upload/thumbnil/nilgiri-2020-06-07-5edc99c426aa6.jpeg')",
-      }}
-    >
-      {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/55"></div>
+    <section className="relative">
+      <div className="relative h-[560px] lg:h-[640px] overflow-hidden">
+        <img
+          src={heroImage}
+          alt="Sunset over the forested hills of Bangladesh"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
 
-      {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto h-full flex items-center px-6">
-        <div className="max-w-3xl text-white">
+        {/* Scrim so dark text stays legible over the photo */}
+        <div className="absolute inset-0 bg-gradient-to-r from-paper via-paper/75 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-paper/90 via-transparent to-transparent" />
 
-          <p className="uppercase tracking-[4px] text-yellow-400 font-semibold">
-            Welcome to TripDaoBD
-          </p>
+        <div className="relative h-full max-w-7xl mx-auto px-5 lg:px-8 flex items-center">
+          <div className="max-w-xl animate-rise-in">
+            <p className="text-sm font-semibold tracking-wide text-ink-soft">
+              Explore Bangladesh
+            </p>
 
-          <h1 className="mt-5 text-6xl font-extrabold leading-tight">
-            Explore the Beauty of Bangladesh
-          </h1>
+            <h1 className="mt-4 text-4xl sm:text-5xl lg:text-[3.4rem] font-semibold leading-[1.08] text-ink text-balance">
+              Discover Bangladesh.
+              <br />
+              <span className="text-forest">Travel it prepared.</span>
+            </h1>
 
-          <p className="mt-6 text-xl text-gray-200 leading-8">
-            Discover breathtaking beaches, tea gardens,
-            hills, forests, islands and historical places.
-            Plan your journey, book hotels, explore transport
-            and travel safely—all from one platform.
-          </p>
-
-          <div className="flex gap-5 mt-10">
-
-<Link
-  to="/explore"
-  className="bg-blue-700 hover:bg-blue-800 px-8 py-4 rounded-full font-semibold"
->
-  Explore Now
-</Link>
+            <p className="mt-6 text-lg text-ink-soft leading-relaxed max-w-md">
+              Beaches, hills and tea gardens matched with a place to stay,
+              a way to get there, and the nearest help if you need it.
+            </p>
 
             <Link
-              to="/features"
-              className="border border-white hover:bg-white hover:text-black px-8 py-4 rounded-full font-semibold duration-300"
+              to="/explore"
+              className="mt-8 inline-flex items-center gap-2 bg-amber hover:bg-amber-dark text-ink px-7 py-3.5 rounded-full font-semibold transition-colors"
             >
-              Learn More
+              Explore now
+              <ArrowRight size={18} />
             </Link>
-
           </div>
-
         </div>
       </div>
     </section>
