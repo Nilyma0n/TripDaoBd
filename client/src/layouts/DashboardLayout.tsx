@@ -17,96 +17,69 @@ import {
   ChevronDown,
   ArrowLeft,
   CheckCheck,
+  Loader2,
+  AlertCircle,
+  Plane,
+  Wallet,
+  Info,
 } from "lucide-react";
 
 interface NotificationItem {
   id: number;
+  user_id: number;
   title: string;
   message: string;
-  time: string;
   type: "booking" | "message" | "payment" | "travel" | "system";
-  read: boolean;
-  link?: string;
+  link?: string | null;
+  is_read: number;
+  created_at: string;
 }
+
+interface ApiNotification {
+  id: number;
+  user_id: number;
+  title: string;
+  message: string;
+  type: "booking" | "message" | "payment" | "travel" | "system";
+  link?: string | null;
+  is_read: number;
+  created_at: string;
+}
+
+const API_BASE_URL = "http://localhost:5000/api";
 
 const DashboardLayout = () => {
   const navigate = useNavigate();
 
-  // ==============================
-  // NOTIFICATIONS
-  // ==============================
+  // ============================================================
+  // NOTIFICATIONS STATE
+  // ============================================================
 
-  const [notifications, setNotifications] =
-    useState<NotificationItem[]>([
-      {
-        id: 1,
-        title: "Booking Confirmed",
-        message:
-          "Your Cox's Bazar Retreat booking has been confirmed.",
-        time: "10 minutes ago",
-        type: "booking",
-        read: false,
-        link: "/dashboard/bookings",
-      },
-
-      {
-        id: 2,
-        title: "New Message",
-        message:
-          "You have a new message from TripDaoBD support.",
-        time: "1 hour ago",
-        type: "message",
-        read: false,
-        link: "/dashboard/messages",
-      },
-
-      {
-        id: 3,
-        title: "Payment Successful",
-        message:
-          "Your payment of ৳9,750 was successfully processed.",
-        time: "3 hours ago",
-        type: "payment",
-        read: false,
-        link: "/dashboard/bookings",
-      },
-
-      {
-        id: 4,
-        title: "Upcoming Trip",
-        message:
-          "Your Cox's Bazar trip starts in 5 days.",
-        time: "Yesterday",
-        type: "travel",
-        read: true,
-        link: "/dashboard/bookings",
-      },
-
-      {
-        id: 5,
-        title: "Welcome to TripDaoBD",
-        message:
-          "Explore destinations and plan your next adventure.",
-        time: "2 days ago",
-        type: "system",
-        read: true,
-        link: "/explore",
-      },
-    ]);
+  const [notifications, setNotifications] = useState<
+    NotificationItem[]
+  >([]);
 
   const [notificationOpen, setNotificationOpen] =
     useState(false);
 
-  // ==============================
-  // GET USER
-  // ==============================
+  const [notificationLoading, setNotificationLoading] =
+    useState(false);
+
+  const [notificationError, setNotificationError] =
+    useState("");
+
+  // ============================================================
+  // GET STORED USER
+  // ============================================================
 
   const getStoredUser = () => {
     const userData =
       localStorage.getItem("user") ||
       sessionStorage.getItem("user");
 
-    if (!userData) return null;
+    if (!userData) {
+      return null;
+    }
 
     try {
       return JSON.parse(userData);
@@ -117,17 +90,115 @@ const DashboardLayout = () => {
 
   const user = getStoredUser();
 
-  // ==============================
+  // ============================================================
+  // GET AUTH TOKEN
+  // ============================================================
+
+  const getAuthToken = () => {
+    return (
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      sessionStorage.getItem("token") ||
+      sessionStorage.getItem("accessToken")
+    );
+  };
+
+  // ============================================================
+  // LOAD NOTIFICATIONS
+  // ============================================================
+
+  const loadNotifications = async () => {
+    const token = getAuthToken();
+
+    if (!token) {
+      setNotifications([]);
+      setNotificationError(
+        "Please login to view notifications."
+      );
+      return;
+    }
+
+    try {
+      setNotificationLoading(true);
+      setNotificationError("");
+
+      const response = await fetch(
+        `${API_BASE_URL}/notifications`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message ||
+            "Failed to load notifications."
+        );
+      }
+
+      const mappedNotifications: NotificationItem[] =
+        (result.notifications || []).map(
+          (notification: ApiNotification) => ({
+            id: notification.id,
+            user_id: notification.user_id,
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            link: notification.link,
+            is_read: Number(notification.is_read),
+            created_at: notification.created_at,
+          })
+        );
+
+      setNotifications(mappedNotifications);
+    } catch (error) {
+      console.error(
+        "Load Notifications Error:",
+        error
+      );
+
+      setNotificationError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load notifications."
+      );
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  // ============================================================
+  // HANDLE NOTIFICATION BELL
+  // ============================================================
+
+  const handleNotificationToggle = () => {
+    const nextState = !notificationOpen;
+
+    setNotificationOpen(nextState);
+
+    if (nextState) {
+      loadNotifications();
+    }
+  };
+
+  // ============================================================
   // UNREAD COUNT
-  // ==============================
+  // ============================================================
 
   const unreadCount = notifications.filter(
-    (notification) => !notification.read
+    (notification) =>
+      Number(notification.is_read) === 0
   ).length;
 
-  // ==============================
+  // ============================================================
   // SIDEBAR LINK STYLE
-  // ==============================
+  // ============================================================
 
   const linkClass = ({
     isActive,
@@ -140,9 +211,9 @@ const DashboardLayout = () => {
         : "text-slate-300 hover:bg-white/5 hover:text-white"
     }`;
 
-  // ==============================
+  // ============================================================
   // LOGOUT
-  // ==============================
+  // ============================================================
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -156,44 +227,114 @@ const DashboardLayout = () => {
     navigate("/login");
   };
 
-  // ==============================
-  // MARK NOTIFICATION AS READ
-  // ==============================
+  // ============================================================
+  // MARK SINGLE NOTIFICATION AS READ
+  // ============================================================
 
-  const markAsRead = (id: number) => {
-    setNotifications((current) =>
-      current.map((notification) =>
-        notification.id === id
-          ? {
-              ...notification,
-              read: true,
-            }
-          : notification
-      )
-    );
+  const markAsRead = async (
+    notificationId: number
+  ) => {
+    const token = getAuthToken();
+
+    if (!token) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/notifications/${notificationId}/read`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message ||
+            "Failed to mark notification as read."
+        );
+      }
+
+      setNotifications((current) =>
+        current.map((notification) =>
+          notification.id === notificationId
+            ? {
+                ...notification,
+                is_read: 1,
+              }
+            : notification
+        )
+      );
+    } catch (error) {
+      console.error(
+        "Mark Notification Read Error:",
+        error
+      );
+    }
   };
 
-  // ==============================
-  // MARK ALL AS READ
-  // ==============================
+  // ============================================================
+  // MARK ALL NOTIFICATIONS AS READ
+  // ============================================================
 
-  const markAllAsRead = () => {
-    setNotifications((current) =>
-      current.map((notification) => ({
-        ...notification,
-        read: true,
-      }))
-    );
+  const markAllAsRead = async () => {
+    const token = getAuthToken();
+
+    if (!token) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/notifications/read-all`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message ||
+            "Failed to mark notifications as read."
+        );
+      }
+
+      setNotifications((current) =>
+        current.map((notification) => ({
+          ...notification,
+          is_read: 1,
+        }))
+      );
+    } catch (error) {
+      console.error(
+        "Mark All Notifications Read Error:",
+        error
+      );
+    }
   };
 
-  // ==============================
+  // ============================================================
   // NOTIFICATION CLICK
-  // ==============================
+  // ============================================================
 
-  const handleNotificationClick = (
+  const handleNotificationClick = async (
     notification: NotificationItem
   ) => {
-    markAsRead(notification.id);
+    if (Number(notification.is_read) === 0) {
+      await markAsRead(notification.id);
+    }
 
     setNotificationOpen(false);
 
@@ -202,30 +343,106 @@ const DashboardLayout = () => {
     }
   };
 
-  // ==============================
+  // ============================================================
+  // RELATIVE TIME
+  // ============================================================
+
+  const getRelativeTime = (
+    createdAt: string
+  ) => {
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+
+    const difference =
+      now.getTime() - createdDate.getTime();
+
+    const seconds = Math.floor(
+      difference / 1000
+    );
+
+    if (seconds < 60) {
+      return "Just now";
+    }
+
+    const minutes = Math.floor(
+      seconds / 60
+    );
+
+    if (minutes < 60) {
+      return `${minutes} minute${
+        minutes !== 1 ? "s" : ""
+      } ago`;
+    }
+
+    const hours = Math.floor(
+      minutes / 60
+    );
+
+    if (hours < 24) {
+      return `${hours} hour${
+        hours !== 1 ? "s" : ""
+      } ago`;
+    }
+
+    const days = Math.floor(
+      hours / 24
+    );
+
+    if (days < 7) {
+      return `${days} day${
+        days !== 1 ? "s" : ""
+      } ago`;
+    }
+
+    const weeks = Math.floor(
+      days / 7
+    );
+
+    if (weeks < 4) {
+      return `${weeks} week${
+        weeks !== 1 ? "s" : ""
+      } ago`;
+    }
+
+    return createdDate.toLocaleDateString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }
+    );
+  };
+
+  // ============================================================
   // NOTIFICATION ICON
-  // ==============================
+  // ============================================================
 
   const getNotificationIcon = (
     type: NotificationItem["type"]
   ) => {
     switch (type) {
       case "booking":
-        return "📅";
+        return <CalendarDays size={18} />;
 
       case "message":
-        return "💬";
+        return <MessageCircle size={18} />;
 
       case "payment":
-        return "💳";
+        return <Wallet size={18} />;
 
       case "travel":
-        return "✈️";
+        return <Plane size={18} />;
 
+      case "system":
       default:
-        return "🌿";
+        return <Info size={18} />;
     }
   };
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
     <div className="min-h-screen bg-[#071817] text-white">
@@ -238,25 +455,22 @@ const DashboardLayout = () => {
 
         <div className="h-full flex items-center">
 
-          {/* ==============================
+          {/* =================================================
               LOGO
-          ============================== */}
+          ================================================= */}
 
           <button
             onClick={() => navigate("/")}
             className="w-[285px] h-full px-8 flex items-center gap-3 border-r border-white/5 text-left"
           >
             <div className="w-11 h-11 rounded-xl bg-[#c9a34e]/10 border border-[#c9a34e]/30 flex items-center justify-center">
-
               <Compass
                 size={25}
                 className="text-[#d9b45c]"
               />
-
             </div>
 
             <div>
-
               <h1 className="text-xl font-bold tracking-tight">
                 TripDaoBD
               </h1>
@@ -264,13 +478,12 @@ const DashboardLayout = () => {
               <p className="text-[11px] text-slate-400">
                 Travel beyond ordinary
               </p>
-
             </div>
           </button>
 
-          {/* ==============================
+          {/* =================================================
               SEARCH
-          ============================== */}
+          ================================================= */}
 
           <div className="flex-1 px-8">
 
@@ -302,9 +515,9 @@ const DashboardLayout = () => {
 
           <div className="flex items-center gap-7 px-8">
 
-            {/* ==============================
+            {/* =================================================
                 WISHLIST
-            ============================== */}
+            ================================================= */}
 
             <button
               onClick={() =>
@@ -316,22 +529,17 @@ const DashboardLayout = () => {
               <Heart size={22} />
             </button>
 
-            {/* ==============================
+            {/* =================================================
                 NOTIFICATIONS
-            ============================== */}
+            ================================================= */}
 
             <div className="relative">
 
               <button
-                onClick={() =>
-                  setNotificationOpen(
-                    (current) => !current
-                  )
-                }
+                onClick={handleNotificationToggle}
                 className="relative text-slate-300 hover:text-white transition"
                 title="Notifications"
               >
-
                 <Bell size={22} />
 
                 {unreadCount > 0 && (
@@ -341,12 +549,11 @@ const DashboardLayout = () => {
                       : unreadCount}
                   </span>
                 )}
-
               </button>
 
-              {/* ==============================
+              {/* =================================================
                   NOTIFICATION DROPDOWN
-              ============================== */}
+              ================================================= */}
 
               {notificationOpen && (
 
@@ -357,13 +564,11 @@ const DashboardLayout = () => {
                   <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
 
                     <div>
-
                       <h3 className="font-semibold text-white">
                         Notifications
                       </h3>
 
                       <p className="text-xs text-slate-500 mt-1">
-
                         {unreadCount > 0
                           ? `${unreadCount} unread notification${
                               unreadCount > 1
@@ -371,118 +576,191 @@ const DashboardLayout = () => {
                                 : ""
                             }`
                           : "You're all caught up"}
-
                       </p>
-
                     </div>
 
                     {unreadCount > 0 && (
-
                       <button
                         onClick={markAllAsRead}
                         className="flex items-center gap-1.5 text-xs text-[#d9b45c] hover:text-[#f0cd72] transition"
                       >
-
                         <CheckCheck size={15} />
-
                         Mark all read
-
                       </button>
-
                     )}
 
                   </div>
 
-                  {/* NOTIFICATIONS */}
+                  {/* =================================================
+                      LOADING
+                  ================================================= */}
 
-                  <div className="max-h-[420px] overflow-y-auto">
+                  {notificationLoading && (
+                    <div className="px-6 py-10 text-center">
 
-                    {notifications.length === 0 ? (
+                      <Loader2
+                        size={28}
+                        className="mx-auto text-[#d9b45c] animate-spin"
+                      />
 
-                      <div className="px-6 py-12 text-center">
+                      <p className="mt-3 text-sm text-slate-400">
+                        Loading notifications...
+                      </p>
 
-                        <Bell
-                          size={35}
-                          className="mx-auto text-slate-600"
+                    </div>
+                  )}
+
+                  {/* =================================================
+                      ERROR
+                  ================================================= */}
+
+                  {!notificationLoading &&
+                    notificationError && (
+                      <div className="px-6 py-10 text-center">
+
+                        <AlertCircle
+                          size={30}
+                          className="mx-auto text-red-400"
                         />
 
-                        <p className="mt-4 text-slate-400">
-                          No notifications yet.
+                        <p className="mt-3 text-sm text-slate-400">
+                          {notificationError}
                         </p>
+
+                        <button
+                          onClick={loadNotifications}
+                          className="mt-4 text-xs text-[#d9b45c] hover:text-[#f0cd72]"
+                        >
+                          Try again
+                        </button>
+
+                      </div>
+                    )}
+
+                  {/* =================================================
+                      NOTIFICATIONS LIST
+                  ================================================= */}
+
+                  {!notificationLoading &&
+                    !notificationError && (
+
+                      <div className="max-h-[420px] overflow-y-auto">
+
+                        {notifications.length === 0 ? (
+
+                          <div className="px-6 py-12 text-center">
+
+                            <Bell
+                              size={35}
+                              className="mx-auto text-slate-600"
+                            />
+
+                            <p className="mt-4 text-slate-400">
+                              No notifications yet.
+                            </p>
+
+                          </div>
+
+                        ) : (
+
+                          notifications.map(
+                            (notification) => {
+
+                              const isRead =
+                                Number(
+                                  notification.is_read
+                                ) === 1;
+
+                              return (
+                                <button
+                                  key={
+                                    notification.id
+                                  }
+                                  onClick={() =>
+                                    handleNotificationClick(
+                                      notification
+                                    )
+                                  }
+                                  className={`w-full text-left px-5 py-4 flex gap-4 border-b border-white/5 hover:bg-white/[0.04] transition ${
+                                    !isRead
+                                      ? "bg-[#c9a34e]/[0.04]"
+                                      : ""
+                                  }`}
+                                >
+
+                                  {/* ICON */}
+
+                                  <div
+                                    className={`w-10 h-10 shrink-0 rounded-xl border flex items-center justify-center ${
+                                      notification.type ===
+                                      "payment"
+                                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                        : notification.type ===
+                                            "booking"
+                                          ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                                          : notification.type ===
+                                              "message"
+                                            ? "bg-purple-500/10 border-purple-500/20 text-purple-400"
+                                            : "bg-[#16352f] border-white/5 text-[#d9b45c]"
+                                    }`}
+                                  >
+                                    {getNotificationIcon(
+                                      notification.type
+                                    )}
+                                  </div>
+
+                                  {/* CONTENT */}
+
+                                  <div className="flex-1 min-w-0">
+
+                                    <div className="flex items-start justify-between gap-3">
+
+                                      <p
+                                        className={`text-sm ${
+                                          isRead
+                                            ? "text-slate-300"
+                                            : "text-white font-semibold"
+                                        }`}
+                                      >
+                                        {
+                                          notification.title
+                                        }
+                                      </p>
+
+                                      {!isRead && (
+                                        <span className="w-2 h-2 mt-1.5 rounded-full bg-[#d9b45c] shrink-0" />
+                                      )}
+
+                                    </div>
+
+                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                      {
+                                        notification.message
+                                      }
+                                    </p>
+
+                                    <p className="text-[11px] text-slate-600 mt-2">
+                                      {getRelativeTime(
+                                        notification.created_at
+                                      )}
+                                    </p>
+
+                                  </div>
+
+                                </button>
+                              );
+                            }
+                          )
+
+                        )}
 
                       </div>
 
-                    ) : (
-
-                      notifications.map(
-                        (notification) => (
-
-                          <button
-                            key={notification.id}
-                            onClick={() =>
-                              handleNotificationClick(
-                                notification
-                              )
-                            }
-                            className={`w-full text-left px-5 py-4 flex gap-4 border-b border-white/5 hover:bg-white/[0.04] transition ${
-                              !notification.read
-                                ? "bg-[#c9a34e]/[0.04]"
-                                : ""
-                            }`}
-                          >
-
-                            {/* ICON */}
-
-                            <div className="w-10 h-10 shrink-0 rounded-xl bg-[#16352f] border border-white/5 flex items-center justify-center text-lg">
-
-                              {getNotificationIcon(
-                                notification.type
-                              )}
-
-                            </div>
-
-                            {/* CONTENT */}
-
-                            <div className="flex-1 min-w-0">
-
-                              <div className="flex items-start justify-between gap-3">
-
-                                <p
-                                  className={`text-sm ${
-                                    notification.read
-                                      ? "text-slate-300"
-                                      : "text-white font-semibold"
-                                  }`}
-                                >
-                                  {notification.title}
-                                </p>
-
-                                {!notification.read && (
-                                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#d9b45c] shrink-0" />
-                                )}
-
-                              </div>
-
-                              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                {notification.message}
-                              </p>
-
-                              <p className="text-[11px] text-slate-600 mt-2">
-                                {notification.time}
-                              </p>
-
-                            </div>
-
-                          </button>
-
-                        )
-                      )
-
                     )}
 
-                  </div>
-
-                  {/* FOOTER */}
+                  {/* =================================================
+                      FOOTER
+                  ================================================= */}
 
                   <button
                     onClick={() => {
@@ -491,7 +769,7 @@ const DashboardLayout = () => {
                         "/dashboard/notifications"
                       );
                     }}
-                    className="w-full py-3.5 text-sm text-[#d9b45c] hover:bg-white/[0.03] transition font-medium"
+                    className="w-full py-3.5 text-sm text-[#d9b45c] hover:bg-white/[0.03] transition font-medium border-t border-white/5"
                   >
                     View all notifications
                   </button>
@@ -502,9 +780,9 @@ const DashboardLayout = () => {
 
             </div>
 
-            {/* ==============================
+            {/* =================================================
                 USER
-            ============================== */}
+            ================================================= */}
 
             <button
               onClick={() =>
@@ -519,18 +797,20 @@ const DashboardLayout = () => {
 
                   <img
                     src={user.profile_image}
-                    alt={user.full_name || "User"}
+                    alt={
+                      user.full_name ||
+                      "User"
+                    }
                     className="w-full h-full object-cover"
                   />
 
                 ) : (
 
                   <span className="text-[#d9b45c] font-bold">
-
                     {user?.full_name
                       ?.charAt(0)
-                      .toUpperCase() || "U"}
-
+                      .toUpperCase() ||
+                      "U"}
                   </span>
 
                 )}
@@ -540,7 +820,8 @@ const DashboardLayout = () => {
               <div className="hidden xl:block text-left">
 
                 <p className="text-sm font-semibold">
-                  {user?.full_name || "Traveler"}
+                  {user?.full_name ||
+                    "Traveler"}
                 </p>
 
                 <p className="text-xs text-slate-500">
@@ -568,9 +849,7 @@ const DashboardLayout = () => {
 
       <aside className="fixed left-0 top-[82px] bottom-0 w-[285px] bg-[#081c1b] border-r border-white/5 flex flex-col overflow-y-auto">
 
-        {/* ==============================
-            DASHBOARD
-        ============================== */}
+        {/* DASHBOARD */}
 
         <div className="p-5">
 
@@ -579,20 +858,15 @@ const DashboardLayout = () => {
             end
             className={linkClass}
           >
-
             <LayoutDashboard size={19} />
-
             <span>
               Dashboard
             </span>
-
           </NavLink>
 
         </div>
 
-        {/* ==============================
-            MAIN
-        ============================== */}
+        {/* MAIN */}
 
         <div className="px-5">
 
@@ -638,9 +912,7 @@ const DashboardLayout = () => {
 
         </div>
 
-        {/* ==============================
-            ACCOUNT
-        ============================== */}
+        {/* ACCOUNT */}
 
         <div className="px-5 mt-8">
 
@@ -650,8 +922,6 @@ const DashboardLayout = () => {
 
           <nav className="space-y-1">
 
-            {/* MY PROFILE */}
-
             <NavLink
               to="/dashboard/profile"
               className={linkClass}
@@ -659,8 +929,6 @@ const DashboardLayout = () => {
               <User size={19} />
               <span>My Profile</span>
             </NavLink>
-
-            {/* BOOKINGS */}
 
             <NavLink
               to="/dashboard/bookings"
@@ -670,11 +938,6 @@ const DashboardLayout = () => {
               <span>Bookings</span>
             </NavLink>
 
-            {/* =========================================
-                PAYMENT METHODS
-                FIXED ROUTE
-            ========================================= */}
-
             <NavLink
               to="/dashboard/payment-methods"
               className={linkClass}
@@ -682,10 +945,6 @@ const DashboardLayout = () => {
               <CreditCard size={19} />
               <span>Payment Methods</span>
             </NavLink>
-
-            {/* =========================================
-                SETTINGS
-            ========================================= */}
 
             <NavLink
               to="/dashboard/settings"
@@ -699,9 +958,7 @@ const DashboardLayout = () => {
 
         </div>
 
-        {/* ==============================
-            EXPLORE CARD
-        ============================== */}
+        {/* EXPLORE CARD */}
 
         <div className="mt-auto p-5">
 
@@ -722,7 +979,9 @@ const DashboardLayout = () => {
               </p>
 
               <button
-                onClick={() => navigate("/explore")}
+                onClick={() =>
+                  navigate("/explore")
+                }
                 className="mt-5 bg-[#d6ae52] hover:bg-[#e3be67] text-[#071817] px-5 py-2.5 rounded-xl font-semibold text-sm transition"
               >
                 Explore Now →
@@ -734,9 +993,7 @@ const DashboardLayout = () => {
 
         </div>
 
-        {/* ==============================
-            LOGOUT
-        ============================== */}
+        {/* LOGOUT */}
 
         <div className="px-5 pb-6">
 
@@ -744,13 +1001,11 @@ const DashboardLayout = () => {
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition"
           >
-
             <LogOut size={19} />
 
             <span>
               Logout
             </span>
-
           </button>
 
         </div>
@@ -771,11 +1026,9 @@ const DashboardLayout = () => {
             onClick={() => navigate("/")}
             className="flex items-center gap-2 text-sm text-slate-400 hover:text-[#d9b45c] transition"
           >
-
             <ArrowLeft size={16} />
 
             Back to website
-
           </button>
 
         </div>

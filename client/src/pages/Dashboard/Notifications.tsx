@@ -8,9 +8,14 @@ import {
   Leaf,
   RefreshCw,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import {
+  getMyNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from "../../services/notificationService";
 
 interface NotificationItem {
   id: number;
@@ -28,20 +33,44 @@ interface NotificationItem {
   created_at: string;
 }
 
-const API_URL = "http://localhost:5000";
+type ApiNotification = Omit<
+  NotificationItem,
+  "is_read"
+> & {
+  is_read: boolean | number;
+};
 
 const Notifications = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-
-  const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState<
+    NotificationItem[]
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   const [markingAll, setMarkingAll] = useState(false);
   const [markingId, setMarkingId] = useState<number | null>(
     null
   );
+
+  // =====================================================
+  // NORMALIZE API DATA
+  // Backend returns is_read as 0 / 1.
+  // Frontend uses boolean.
+  // =====================================================
+
+  const normalizeNotifications = (
+    items: ApiNotification[]
+  ): NotificationItem[] => {
+    return items.map((notification) => ({
+      ...notification,
+      is_read:
+        notification.is_read === true ||
+        notification.is_read === 1,
+    }));
+  };
 
   // =====================================================
   // FORMAT TIME
@@ -95,41 +124,28 @@ const Notifications = () => {
 
   // =====================================================
   // FETCH NOTIFICATIONS
-  // Used by Refresh and Try Again buttons
   // =====================================================
 
   const fetchNotifications = async () => {
+    if (!token) {
+      setNotifications([]);
+      setError("Please login first.");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
-      if (!token) {
-        setNotifications([]);
-        setError("Please login first.");
-        return;
-      }
+      const data = await getMyNotifications();
 
-      const response = await fetch(
-        `${API_URL}/api/notifications`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+      const normalized = normalizeNotifications(
+        data.notifications || []
       );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to load notifications."
-        );
-      }
-
-      setNotifications(data.notifications || []);
+      setNotifications(normalized);
+      setLoaded(true);
     } catch (err) {
       console.error(
         "Notification Fetch Error:",
@@ -147,76 +163,20 @@ const Notifications = () => {
   };
 
   // =====================================================
-  // INITIAL LOAD
-  // IMPORTANT:
-  // Do NOT call fetchNotifications() directly here.
-  // This avoids the React set-state-in-effect ESLint error.
+  // LOAD PAGE
+  //
+  // No useEffect is used.
+  // The page loads notifications when the user clicks
+  // the Load / Refresh action.
   // =====================================================
 
-  useEffect(() => {
-    let cancelled = false;
+  const handleLoadNotifications = () => {
+    if (loading) {
+      return;
+    }
 
-    const loadNotifications = async () => {
-      try {
-        if (!token) {
-          if (!cancelled) {
-            setNotifications([]);
-            setError("Please login first.");
-            setLoading(false);
-          }
-
-          return;
-        }
-
-        const response = await fetch(
-          `${API_URL}/api/notifications`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.message ||
-              "Failed to load notifications."
-          );
-        }
-
-        if (!cancelled) {
-          setNotifications(data.notifications || []);
-          setError("");
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error(
-          "Initial Notification Fetch Error:",
-          err
-        );
-
-        if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Failed to load notifications."
-          );
-
-          setLoading(false);
-        }
-      }
-    };
-
-    void loadNotifications();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+    void fetchNotifications();
+  };
 
   // =====================================================
   // UNREAD COUNT
@@ -240,25 +200,7 @@ const Notifications = () => {
       setMarkingId(id);
       setError("");
 
-      const response = await fetch(
-        `${API_URL}/api/notifications/${id}/read`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to mark notification as read."
-        );
-      }
+      await markNotificationAsRead(id);
 
       setNotifications((current) =>
         current.map((notification) =>
@@ -271,7 +213,10 @@ const Notifications = () => {
         )
       );
     } catch (err) {
-      console.error("Mark Read Error:", err);
+      console.error(
+        "Mark Read Error:",
+        err
+      );
 
       setError(
         err instanceof Error
@@ -297,25 +242,7 @@ const Notifications = () => {
       setMarkingAll(true);
       setError("");
 
-      const response = await fetch(
-        `${API_URL}/api/notifications/read-all`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to mark all notifications as read."
-        );
-      }
+      await markAllNotificationsAsRead();
 
       setNotifications((current) =>
         current.map((notification) => ({
@@ -324,7 +251,10 @@ const Notifications = () => {
         }))
       );
     } catch (err) {
-      console.error("Mark All Read Error:", err);
+      console.error(
+        "Mark All Read Error:",
+        err
+      );
 
       setError(
         err instanceof Error
@@ -404,10 +334,47 @@ const Notifications = () => {
   };
 
   // =====================================================
+  // INITIAL SCREEN
+  // =====================================================
+
+  if (!loaded && !loading && !error) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <div className="flex flex-col items-center justify-center py-32 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-[#c9a34e]/10 border border-[#c9a34e]/20 flex items-center justify-center">
+            <Bell
+              size={32}
+              className="text-[#d9b45c]"
+            />
+          </div>
+
+          <h1 className="text-3xl font-bold mt-6">
+            Notifications
+          </h1>
+
+          <p className="text-slate-500 mt-2 max-w-md">
+            Stay updated with your trips, bookings,
+            payments, and account activity.
+          </p>
+
+          <button
+            type="button"
+            onClick={handleLoadNotifications}
+            className="mt-7 flex items-center gap-2 bg-[#c9a34e] text-[#102522] hover:bg-[#d9b45c] px-6 py-3 rounded-xl font-semibold transition"
+          >
+            <Bell size={18} />
+            Load Notifications
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =====================================================
   // LOADING STATE
   // =====================================================
 
-  if (loading) {
+  if (loading && !loaded) {
     return (
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-center py-32">
@@ -463,13 +430,15 @@ const Notifications = () => {
 
           <button
             type="button"
-            onClick={fetchNotifications}
+            onClick={handleLoadNotifications}
             disabled={loading}
             className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 px-4 py-3 rounded-xl text-sm font-medium transition disabled:opacity-50"
           >
             <RefreshCw
               size={17}
-              className={loading ? "animate-spin" : ""}
+              className={
+                loading ? "animate-spin" : ""
+              }
             />
 
             Refresh
@@ -480,7 +449,9 @@ const Notifications = () => {
           {unreadCount > 0 && (
             <button
               type="button"
-              onClick={markAllAsRead}
+              onClick={() => {
+                void markAllAsRead();
+              }}
               disabled={markingAll}
               className="flex items-center justify-center gap-2 bg-[#c9a34e]/10 border border-[#c9a34e]/20 text-[#d9b45c] hover:bg-[#c9a34e]/20 px-5 py-3 rounded-xl text-sm font-medium transition disabled:opacity-50"
             >
@@ -516,7 +487,7 @@ const Notifications = () => {
 
             <button
               type="button"
-              onClick={fetchNotifications}
+              onClick={handleLoadNotifications}
               className="underline hover:no-underline"
             >
               Try again
@@ -598,9 +569,11 @@ const Notifications = () => {
             <button
               type="button"
               key={notification.id}
-              onClick={() =>
-                handleNotificationClick(notification)
-              }
+              onClick={() => {
+                void handleNotificationClick(
+                  notification
+                );
+              }}
               disabled={
                 markingId === notification.id
               }

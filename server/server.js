@@ -11,6 +11,9 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import paymentMethodRoutes from "./routes/paymentMethodRoutes.js";
 import destinationRoutes from "./routes/destinationRoutes.js";
+import transportRoutes from "./routes/transportRoutes.js";
+import flightSellerRoutes from "./routes/flightSellerRoutes.js";
+import flightRoutes from "./routes/flightRoutes.js";
 
 dotenv.config();
 
@@ -53,14 +56,60 @@ app.use(
 app.use("/api/notifications", notificationRoutes);
 
 // =====================================================
-// TEST SERVER + DATABASE CONNECTION
+// PAYMENT ROUTES
 // =====================================================
 
 app.use("/api/payments", paymentRoutes);
 
-app.use("/api/payment-methods", paymentMethodRoutes);
+app.use(
+  "/api/payment-methods",
+  paymentMethodRoutes
+);
 
-app.use("/api/destinations", destinationRoutes);
+// =====================================================
+// DESTINATION ROUTES
+// =====================================================
+
+app.use(
+  "/api/destinations",
+  destinationRoutes
+);
+
+// =====================================================
+// TRANSPORT ROUTES
+// =====================================================
+
+app.use(
+  "/api/transport",
+  transportRoutes
+);
+
+// =====================================================
+// FLIGHT SELLER MARKETPLACE ROUTES
+// =====================================================
+//
+// Seller:
+// POST /api/flight-sellers/register
+// GET  /api/flight-sellers/me
+// PUT  /api/flight-sellers/me
+//
+// Admin:
+// GET /api/flight-sellers/admin/all
+// PUT /api/flight-sellers/admin/:id/approve
+// PUT /api/flight-sellers/admin/:id/reject
+// PUT /api/flight-sellers/admin/:id/toggle-selling
+//
+// =====================================================
+
+app.use(
+  "/api/flight-sellers",
+  flightSellerRoutes
+);
+
+app.use("/api/flights", flightRoutes);
+// =====================================================
+// TEST SERVER + DATABASE CONNECTION
+// =====================================================
 
 app.get("/", async (req, res) => {
   try {
@@ -75,7 +124,10 @@ app.get("/", async (req, res) => {
       time: rows[0].currentTime,
     });
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error(
+      "Database Error:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -101,7 +153,10 @@ app.use((req, res) => {
 // =====================================================
 
 app.use((err, req, res, next) => {
-  console.error("Server Error:", err);
+  console.error(
+    "Server Error:",
+    err
+  );
 
   res.status(500).json({
     success: false,

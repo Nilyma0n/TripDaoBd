@@ -1,18 +1,52 @@
 import pool from "../config/db.js";
 
 // =====================================================
-// CREATE PAYMENT
+// CONSTANTS
+// =====================================================
+
+const ALLOWED_PAYMENT_METHODS = [
+  "bkash",
+  "nagad",
+  "card",
+  "bank",
+];
+
+// =====================================================
+// HELPER
+// =====================================================
+
+const getUserId = (req) => {
+  return req.user?.id || req.user?.userId;
+};
+
+const generateTransactionId = (prefix = "TRIP") => {
+  return `${prefix}-${Date.now()}-${Math.floor(
+    Math.random() * 100000
+  )}`;
+};
+
+const formatAmount = (amount) => {
+  return Number(amount).toLocaleString("en-BD", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+// =====================================================
+// CREATE GENERIC PAYMENT
 // POST /api/payments
 // =====================================================
+
 export const createPayment = async (req, res) => {
   let connection;
 
   try {
-    const userId = req.user?.id || req.user?.userId;
+    const userId = getUserId(req);
 
     // ---------------------------------------------------
     // Authentication check
     // ---------------------------------------------------
+
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -30,6 +64,7 @@ export const createPayment = async (req, res) => {
     // ---------------------------------------------------
     // Validate required fields
     // ---------------------------------------------------
+
     if (
       !booking_id ||
       amount === undefined ||
@@ -46,6 +81,7 @@ export const createPayment = async (req, res) => {
     // ---------------------------------------------------
     // Validate booking ID
     // ---------------------------------------------------
+
     const bookingId = Number(booking_id);
 
     if (!Number.isInteger(bookingId) || bookingId <= 0) {
@@ -58,14 +94,8 @@ export const createPayment = async (req, res) => {
     // ---------------------------------------------------
     // Validate payment method
     // ---------------------------------------------------
-    const allowedMethods = [
-      "bkash",
-      "nagad",
-      "card",
-      "bank",
-    ];
 
-    if (!allowedMethods.includes(payment_method)) {
+    if (!ALLOWED_PAYMENT_METHODS.includes(payment_method)) {
       return res.status(400).json({
         success: false,
         message: "Invalid payment method.",
@@ -75,6 +105,7 @@ export const createPayment = async (req, res) => {
     // ---------------------------------------------------
     // Validate amount
     // ---------------------------------------------------
+
     const paymentAmount = Number(amount);
 
     if (
@@ -90,14 +121,15 @@ export const createPayment = async (req, res) => {
     // ---------------------------------------------------
     // Get database connection
     // ---------------------------------------------------
+
     connection = await pool.getConnection();
 
-    // Start transaction
     await connection.beginTransaction();
 
     // ---------------------------------------------------
     // Check booking ownership
     // ---------------------------------------------------
+
     const [bookingRows] = await connection.query(
       `
       SELECT *
@@ -121,8 +153,9 @@ export const createPayment = async (req, res) => {
     const booking = bookingRows[0];
 
     // ---------------------------------------------------
-    // Prevent payment for cancelled booking
+    // Prevent cancelled booking payment
     // ---------------------------------------------------
+
     if (booking.status === "Cancelled") {
       await connection.rollback();
 
@@ -134,35 +167,9 @@ export const createPayment = async (req, res) => {
     }
 
     // ---------------------------------------------------
-    // Prevent payment for already confirmed booking
+    // Check existing paid payment
     // ---------------------------------------------------
-    if (booking.status === "Confirmed") {
-      const [confirmedPayment] = await connection.query(
-        `
-        SELECT *
-        FROM payments
-        WHERE booking_id = ?
-        AND user_id = ?
-        AND payment_status = 'Paid'
-        LIMIT 1
-        `,
-        [bookingId, userId]
-      );
 
-      if (confirmedPayment.length > 0) {
-        await connection.rollback();
-
-        return res.status(400).json({
-          success: false,
-          message: "This booking has already been paid.",
-          payment: confirmedPayment[0],
-        });
-      }
-    }
-
-    // ---------------------------------------------------
-    // Prevent duplicate paid payment
-    // ---------------------------------------------------
     const [existingPaidPayment] =
       await connection.query(
         `
@@ -189,6 +196,7 @@ export const createPayment = async (req, res) => {
     // ---------------------------------------------------
     // Check booking total
     // ---------------------------------------------------
+
     const bookingTotal = Number(booking.total_price);
 
     if (!Number.isFinite(bookingTotal)) {
@@ -200,7 +208,6 @@ export const createPayment = async (req, res) => {
       });
     }
 
-    // Compare amounts in paisa/cents-style integer form
     const paymentAmountInMinor = Math.round(
       paymentAmount * 100
     );
@@ -221,20 +228,21 @@ export const createPayment = async (req, res) => {
     }
 
     // ---------------------------------------------------
-    // Validate transaction ID if provided
+    // Transaction ID
     // ---------------------------------------------------
+
     let generatedTransactionId =
       transaction_id?.toString().trim();
 
     if (!generatedTransactionId) {
-      generatedTransactionId = `TRIP-${Date.now()}-${Math.floor(
-        Math.random() * 10000
-      )}`;
+      generatedTransactionId =
+        generateTransactionId("TRIP");
     }
 
     // ---------------------------------------------------
-    // Check duplicate transaction ID
+    // Duplicate transaction check
     // ---------------------------------------------------
+
     const [existingTransaction] =
       await connection.query(
         `
@@ -251,7 +259,8 @@ export const createPayment = async (req, res) => {
 
       return res.status(400).json({
         success: false,
-        message: "This transaction ID has already been used.",
+        message:
+          "This transaction ID has already been used.",
         payment: existingTransaction[0],
       });
     }
@@ -259,6 +268,7 @@ export const createPayment = async (req, res) => {
     // ---------------------------------------------------
     // Insert payment
     // ---------------------------------------------------
+
     const [paymentResult] =
       await connection.query(
         `
@@ -284,8 +294,9 @@ export const createPayment = async (req, res) => {
       );
 
     // ---------------------------------------------------
-    // Update booking status
+    // Update booking
     // ---------------------------------------------------
+
     await connection.query(
       `
       UPDATE bookings
@@ -297,8 +308,9 @@ export const createPayment = async (req, res) => {
     );
 
     // ---------------------------------------------------
-    // Create notification
+    // Notification
     // ---------------------------------------------------
+
     await connection.query(
       `
       INSERT INTO notifications
@@ -314,12 +326,8 @@ export const createPayment = async (req, res) => {
       [
         userId,
         "Payment Successful",
-        `Payment of BDT ${paymentAmount.toLocaleString(
-          "en-BD",
-          {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }
+        `Payment of BDT ${formatAmount(
+          paymentAmount
         )} for booking #${String(bookingId).padStart(
           5,
           "0"
@@ -332,6 +340,7 @@ export const createPayment = async (req, res) => {
     // ---------------------------------------------------
     // Get created payment
     // ---------------------------------------------------
+
     const [paymentRows] =
       await connection.query(
         `
@@ -353,8 +362,9 @@ export const createPayment = async (req, res) => {
       );
 
     // ---------------------------------------------------
-    // Commit transaction
+    // Commit
     // ---------------------------------------------------
+
     await connection.commit();
 
     return res.status(201).json({
@@ -363,9 +373,6 @@ export const createPayment = async (req, res) => {
       payment: paymentRows[0],
     });
   } catch (error) {
-    // ---------------------------------------------------
-    // Rollback transaction if active
-    // ---------------------------------------------------
     if (connection) {
       try {
         await connection.rollback();
@@ -385,9 +392,530 @@ export const createPayment = async (req, res) => {
       error: error.message,
     });
   } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+};
+
+// =====================================================
+// CREATE FLIGHT PAYMENT
+// POST /api/payments/flight-booking
+// =====================================================
+
+export const createFlightPayment = async (req, res) => {
+  let connection;
+
+  try {
+    const userId = getUserId(req);
+
     // ---------------------------------------------------
-    // Release connection
+    // Authentication
     // ---------------------------------------------------
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User authentication information is missing.",
+      });
+    }
+
+    const {
+      flight_booking_id,
+      amount,
+      payment_method,
+      transaction_id,
+    } = req.body;
+
+    // ---------------------------------------------------
+    // Validate required fields
+    // ---------------------------------------------------
+
+    if (
+      !flight_booking_id ||
+      amount === undefined ||
+      amount === null ||
+      !payment_method
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Flight booking ID, amount and payment method are required.",
+      });
+    }
+
+    // ---------------------------------------------------
+    // Validate flight booking ID
+    // ---------------------------------------------------
+
+    const flightBookingId = Number(
+      flight_booking_id
+    );
+
+    if (
+      !Number.isInteger(flightBookingId) ||
+      flightBookingId <= 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid flight booking ID.",
+      });
+    }
+
+    // ---------------------------------------------------
+    // Validate payment method
+    // ---------------------------------------------------
+
+    if (!ALLOWED_PAYMENT_METHODS.includes(payment_method)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment method.",
+      });
+    }
+
+    // ---------------------------------------------------
+    // Validate amount
+    // ---------------------------------------------------
+
+    const paymentAmount = Number(amount);
+
+    if (
+      !Number.isFinite(paymentAmount) ||
+      paymentAmount <= 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment amount must be greater than 0.",
+      });
+    }
+
+    // ---------------------------------------------------
+    // Get connection
+    // ---------------------------------------------------
+
+    connection = await pool.getConnection();
+
+    await connection.beginTransaction();
+
+    // ---------------------------------------------------
+    // Lock flight booking
+    // ---------------------------------------------------
+
+    const [bookingRows] =
+      await connection.query(
+        `
+        SELECT
+          fb.id,
+          fb.user_id,
+          fb.seller_id,
+          fb.inventory_id,
+          fb.schedule_id,
+          fb.reference_code,
+          fb.passenger_count,
+          fb.base_amount,
+          fb.service_fee,
+          fb.tax_amount,
+          fb.total_amount,
+          fb.payment_status,
+          fb.booking_status,
+          fb.created_at,
+          fb.updated_at
+        FROM flight_bookings fb
+        WHERE fb.id = ?
+        AND fb.user_id = ?
+        LIMIT 1
+        FOR UPDATE
+        `,
+        [flightBookingId, userId]
+      );
+
+    // ---------------------------------------------------
+    // Booking not found
+    // ---------------------------------------------------
+
+    if (bookingRows.length === 0) {
+      await connection.rollback();
+
+      return res.status(404).json({
+        success: false,
+        message: "Flight booking not found.",
+      });
+    }
+
+    const booking = bookingRows[0];
+
+    // ---------------------------------------------------
+    // Prevent rejected/cancelled booking payment
+    // ---------------------------------------------------
+
+    const normalizedBookingStatus =
+      String(
+        booking.booking_status || ""
+      ).toLowerCase();
+
+    if (
+      normalizedBookingStatus === "cancelled" ||
+      normalizedBookingStatus === "rejected"
+    ) {
+      await connection.rollback();
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "Payment cannot be made for a cancelled or rejected flight booking.",
+      });
+    }
+
+    // ---------------------------------------------------
+    // Prevent already paid booking
+    // ---------------------------------------------------
+
+    if (
+      String(
+        booking.payment_status || ""
+      ).toLowerCase() === "paid"
+    ) {
+      const [paidRows] =
+        await connection.query(
+          `
+          SELECT
+            id,
+            flight_booking_id,
+            user_id,
+            amount,
+            payment_method,
+            transaction_id,
+            payment_status,
+            paid_at,
+            created_at
+          FROM flight_payments
+          WHERE flight_booking_id = ?
+          AND user_id = ?
+          AND payment_status = 'Paid'
+          ORDER BY id DESC
+          LIMIT 1
+          `,
+          [flightBookingId, userId]
+        );
+
+      await connection.rollback();
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "This flight booking has already been paid.",
+        payment: paidRows[0] || null,
+      });
+    }
+
+    // ---------------------------------------------------
+    // Check existing paid flight payment
+    // ---------------------------------------------------
+
+    const [existingPaidPayment] =
+      await connection.query(
+        `
+        SELECT
+          id,
+          flight_booking_id,
+          user_id,
+          amount,
+          payment_method,
+          transaction_id,
+          payment_status,
+          paid_at,
+          created_at
+        FROM flight_payments
+        WHERE flight_booking_id = ?
+        AND user_id = ?
+        AND payment_status = 'Paid'
+        LIMIT 1
+        `,
+        [flightBookingId, userId]
+      );
+
+    if (existingPaidPayment.length > 0) {
+      await connection.rollback();
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "This flight booking has already been paid.",
+        payment: existingPaidPayment[0],
+      });
+    }
+
+    // ---------------------------------------------------
+    // Validate booking total
+    // ---------------------------------------------------
+
+    const bookingTotal = Number(
+      booking.total_amount
+    );
+
+    if (
+      !Number.isFinite(bookingTotal) ||
+      bookingTotal <= 0
+    ) {
+      await connection.rollback();
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Invalid flight booking total amount.",
+      });
+    }
+
+    // ---------------------------------------------------
+    // Compare amount using minor units
+    // ---------------------------------------------------
+
+    const paymentAmountInMinor = Math.round(
+      paymentAmount * 100
+    );
+
+    const bookingTotalInMinor = Math.round(
+      bookingTotal * 100
+    );
+
+    if (
+      paymentAmountInMinor !==
+      bookingTotalInMinor
+    ) {
+      await connection.rollback();
+
+      return res.status(400).json({
+        success: false,
+        message: `Payment amount must be ${formatAmount(
+          bookingTotal
+        )}.`,
+      });
+    }
+
+    // ---------------------------------------------------
+    // Transaction ID
+    // ---------------------------------------------------
+
+    let generatedTransactionId =
+      transaction_id?.toString().trim();
+
+    if (!generatedTransactionId) {
+      generatedTransactionId =
+        generateTransactionId("FLIGHT");
+    }
+
+    // ---------------------------------------------------
+    // Duplicate transaction ID
+    // ---------------------------------------------------
+
+    const [existingTransaction] =
+      await connection.query(
+        `
+        SELECT
+          id,
+          flight_booking_id,
+          user_id,
+          amount,
+          payment_method,
+          transaction_id,
+          payment_status,
+          paid_at,
+          created_at
+        FROM flight_payments
+        WHERE transaction_id = ?
+        LIMIT 1
+        `,
+        [generatedTransactionId]
+      );
+
+    if (existingTransaction.length > 0) {
+      await connection.rollback();
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "This transaction ID has already been used.",
+        payment: existingTransaction[0],
+      });
+    }
+
+    // ---------------------------------------------------
+    // Insert flight payment
+    // ---------------------------------------------------
+
+    const [paymentResult] =
+      await connection.query(
+        `
+        INSERT INTO flight_payments
+        (
+          flight_booking_id,
+          user_id,
+          amount,
+          payment_method,
+          transaction_id,
+          payment_status,
+          paid_at
+        )
+        VALUES (?, ?, ?, ?, ?, 'Paid', NOW())
+        `,
+        [
+          flightBookingId,
+          userId,
+          paymentAmount,
+          payment_method,
+          generatedTransactionId,
+        ]
+      );
+
+    // ---------------------------------------------------
+    // Update flight booking payment status
+    // ---------------------------------------------------
+
+    await connection.query(
+      `
+      UPDATE flight_bookings
+      SET
+        payment_status = 'Paid',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      AND user_id = ?
+      `,
+      [flightBookingId, userId]
+    );
+
+    // ---------------------------------------------------
+    // Create notification
+    // ---------------------------------------------------
+
+    await connection.query(
+      `
+      INSERT INTO notifications
+      (
+        user_id,
+        title,
+        message,
+        type,
+        link
+      )
+      VALUES (?, ?, ?, ?, ?)
+      `,
+      [
+        userId,
+        "Flight Payment Successful",
+        `Payment of BDT ${formatAmount(
+          paymentAmount
+        )} for flight booking ${
+          booking.reference_code
+        } was successful.`,
+        "payment",
+        `/dashboard/flights/bookings/${flightBookingId}`,
+      ]
+    );
+
+    // ---------------------------------------------------
+    // Get created flight payment
+    // ---------------------------------------------------
+
+    const [paymentRows] =
+      await connection.query(
+        `
+        SELECT
+          id,
+          flight_booking_id,
+          user_id,
+          amount,
+          payment_method,
+          transaction_id,
+          payment_status,
+          paid_at,
+          created_at,
+          updated_at
+        FROM flight_payments
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [paymentResult.insertId]
+      );
+
+    // ---------------------------------------------------
+    // Get updated booking
+    // ---------------------------------------------------
+
+    const [updatedBookingRows] =
+      await connection.query(
+        `
+        SELECT
+          id,
+          user_id,
+          seller_id,
+          inventory_id,
+          schedule_id,
+          reference_code,
+          passenger_count,
+          base_amount,
+          service_fee,
+          tax_amount,
+          total_amount,
+          payment_status,
+          booking_status,
+          created_at,
+          updated_at
+        FROM flight_bookings
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [flightBookingId]
+      );
+
+    // ---------------------------------------------------
+    // Commit
+    // ---------------------------------------------------
+
+    await connection.commit();
+
+    return res.status(201).json({
+      success: true,
+      message:
+        "Flight payment completed successfully.",
+      payment: paymentRows[0],
+      booking: updatedBookingRows[0],
+    });
+  } catch (error) {
+    if (connection) {
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        console.error(
+          "Flight Payment Rollback Error:",
+          rollbackError
+        );
+      }
+    }
+
+    console.error(
+      "Create Flight Payment Error:",
+      error
+    );
+
+    // ---------------------------------------------------
+    // Handle duplicate transaction race condition
+    // ---------------------------------------------------
+
+    if (error?.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "This transaction ID has already been used.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to process flight payment.",
+      error: error.message,
+    });
+  } finally {
     if (connection) {
       connection.release();
     }
@@ -398,23 +926,27 @@ export const createPayment = async (req, res) => {
 // GET MY PAYMENTS
 // GET /api/payments
 // =====================================================
+
 export const getMyPayments = async (req, res) => {
   try {
-    const userId = req.user?.id || req.user?.userId;
+    const userId = getUserId(req);
 
     // ---------------------------------------------------
     // Authentication check
     // ---------------------------------------------------
+
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "User authentication information is missing.",
+        message:
+          "User authentication information is missing.",
       });
     }
 
     // ---------------------------------------------------
     // Get user's payments
     // ---------------------------------------------------
+
     const [rows] = await pool.query(
       `
       SELECT
@@ -447,7 +979,10 @@ export const getMyPayments = async (req, res) => {
       payments: rows,
     });
   } catch (error) {
-    console.error("Get My Payments Error:", error);
+    console.error(
+      "Get My Payments Error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -461,25 +996,32 @@ export const getMyPayments = async (req, res) => {
 // GET SINGLE PAYMENT
 // GET /api/payments/:id
 // =====================================================
+
 export const getPaymentById = async (req, res) => {
   try {
-    const userId = req.user?.id || req.user?.userId;
+    const userId = getUserId(req);
     const paymentId = Number(req.params.id);
 
     // ---------------------------------------------------
     // Authentication check
     // ---------------------------------------------------
+
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "User authentication information is missing.",
+        message:
+          "User authentication information is missing.",
       });
     }
 
     // ---------------------------------------------------
     // Validate payment ID
     // ---------------------------------------------------
-    if (!Number.isInteger(paymentId) || paymentId <= 0) {
+
+    if (
+      !Number.isInteger(paymentId) ||
+      paymentId <= 0
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid payment ID.",
@@ -489,6 +1031,7 @@ export const getPaymentById = async (req, res) => {
     // ---------------------------------------------------
     // Get payment
     // ---------------------------------------------------
+
     const [rows] = await pool.query(
       `
       SELECT
@@ -519,6 +1062,7 @@ export const getPaymentById = async (req, res) => {
     // ---------------------------------------------------
     // Payment not found
     // ---------------------------------------------------
+
     if (rows.length === 0) {
       return res.status(404).json({
         success: false,
@@ -531,7 +1075,10 @@ export const getPaymentById = async (req, res) => {
       payment: rows[0],
     });
   } catch (error) {
-    console.error("Get Payment Error:", error);
+    console.error(
+      "Get Payment Error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,

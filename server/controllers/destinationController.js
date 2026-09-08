@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 
 /**
+ * ============================================================
  * GET /api/destinations
  *
  * Supports:
@@ -12,6 +13,7 @@ import pool from "../config/db.js";
  * ?search=jaflong
  * ?page=1
  * ?limit=9
+ * ============================================================
  */
 export const getDestinations = async (req, res) => {
   try {
@@ -42,25 +44,33 @@ export const getDestinations = async (req, res) => {
     const conditions = [];
     const params = [];
 
+    // --------------------------------------------------------
     // Division filter
+    // --------------------------------------------------------
     if (division) {
       conditions.push("d.division = ?");
       params.push(division);
     }
 
+    // --------------------------------------------------------
     // District filter
+    // --------------------------------------------------------
     if (district) {
       conditions.push("d.district = ?");
       params.push(district);
     }
 
+    // --------------------------------------------------------
     // Category filter
+    // --------------------------------------------------------
     if (category) {
       conditions.push("d.category = ?");
       params.push(category);
     }
 
+    // --------------------------------------------------------
     // Featured filter
+    // --------------------------------------------------------
     if (featured !== undefined) {
       conditions.push("d.featured = ?");
       params.push(
@@ -68,7 +78,9 @@ export const getDestinations = async (req, res) => {
       );
     }
 
+    // --------------------------------------------------------
     // Popular filter
+    // --------------------------------------------------------
     if (popular !== undefined) {
       conditions.push("d.popular = ?");
       params.push(
@@ -76,7 +88,9 @@ export const getDestinations = async (req, res) => {
       );
     }
 
+    // --------------------------------------------------------
     // Search
+    // --------------------------------------------------------
     if (search) {
       conditions.push(`
         (
@@ -104,9 +118,9 @@ export const getDestinations = async (req, res) => {
         ? `WHERE ${conditions.join(" AND ")}`
         : "";
 
-    // =====================================================
+    // ========================================================
     // TOTAL COUNT
-    // =====================================================
+    // ========================================================
 
     const countSql = `
       SELECT COUNT(*) AS total
@@ -119,16 +133,18 @@ export const getDestinations = async (req, res) => {
       params
     );
 
-    const total = Number(countRows[0].total);
+    const total = Number(
+      countRows[0]?.total || 0
+    );
 
     const totalPages =
       total > 0
         ? Math.ceil(total / limit)
         : 0;
 
-    // =====================================================
+    // ========================================================
     // DESTINATIONS
-    // =====================================================
+    // ========================================================
 
     const dataSql = `
       SELECT
@@ -205,6 +221,7 @@ export const getDestinations = async (req, res) => {
 
 
 /**
+ * ============================================================
  * GET /api/destinations/:slug
  *
  * Returns:
@@ -213,6 +230,7 @@ export const getDestinations = async (req, res) => {
  * + Highlights
  * + Activities
  * + Reviews
+ * ============================================================
  */
 export const getDestinationBySlug = async (
   req,
@@ -229,9 +247,9 @@ export const getDestinationBySlug = async (
       });
     }
 
-    // =====================================================
+    // ========================================================
     // DESTINATION
-    // =====================================================
+    // ========================================================
 
     const destinationSql = `
       SELECT
@@ -279,9 +297,9 @@ export const getDestinationBySlug = async (
     const destination =
       destinationRows[0];
 
-    // =====================================================
+    // ========================================================
     // IMAGES
-    // =====================================================
+    // ========================================================
 
     const [images] =
       await pool.query(
@@ -293,14 +311,16 @@ export const getDestinationBySlug = async (
             sort_order
           FROM destination_images
           WHERE destination_id = ?
-          ORDER BY sort_order ASC, id ASC
+          ORDER BY
+            sort_order ASC,
+            id ASC
         `,
         [destination.id]
       );
 
-    // =====================================================
+    // ========================================================
     // HIGHLIGHTS
-    // =====================================================
+    // ========================================================
 
     const [highlights] =
       await pool.query(
@@ -311,14 +331,16 @@ export const getDestinationBySlug = async (
             sort_order
           FROM destination_highlights
           WHERE destination_id = ?
-          ORDER BY sort_order ASC, id ASC
+          ORDER BY
+            sort_order ASC,
+            id ASC
         `,
         [destination.id]
       );
 
-    // =====================================================
+    // ========================================================
     // ACTIVITIES
-    // =====================================================
+    // ========================================================
 
     const [activities] =
       await pool.query(
@@ -329,14 +351,16 @@ export const getDestinationBySlug = async (
             sort_order
           FROM destination_activities
           WHERE destination_id = ?
-          ORDER BY sort_order ASC, id ASC
+          ORDER BY
+            sort_order ASC,
+            id ASC
         `,
         [destination.id]
       );
 
-    // =====================================================
+    // ========================================================
     // REVIEWS
-    // =====================================================
+    // ========================================================
 
     const [reviews] =
       await pool.query(
@@ -351,18 +375,18 @@ export const getDestinationBySlug = async (
             created_at
           FROM destination_reviews
           WHERE destination_id = ?
-          ORDER BY created_at DESC
+          ORDER BY
+            created_at DESC
         `,
         [destination.id]
       );
 
-    // =====================================================
+    // ========================================================
     // RESPONSE
-    // =====================================================
+    // ========================================================
 
     return res.status(200).json({
       success: true,
-
       data: {
         ...destination,
         images,
@@ -381,6 +405,112 @@ export const getDestinationBySlug = async (
       success: false,
       message:
         "Failed to fetch destination",
+    });
+  }
+};
+
+
+/**
+ * ============================================================
+ * GET /api/destinations/:slug/transport-options
+ *
+ * Returns:
+ * Destination-specific transport /
+ * How To Get There options
+ * ============================================================
+ */
+export const getDestinationTransportOptions = async (
+  req,
+  res
+) => {
+  try {
+    const { slug } = req.params;
+
+    if (!slug) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Destination slug is required",
+      });
+    }
+
+    // ========================================================
+    // FIND DESTINATION
+    // ========================================================
+
+    const destinationSql = `
+      SELECT
+        id
+      FROM destinations
+      WHERE slug = ?
+      LIMIT 1
+    `;
+
+    const [destinationRows] =
+      await pool.query(
+        destinationSql,
+        [slug]
+      );
+
+    if (destinationRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Destination not found",
+      });
+    }
+
+    const destinationId =
+      destinationRows[0].id;
+
+    // ========================================================
+    // TRANSPORT OPTIONS
+    // ========================================================
+
+    const transportSql = `
+      SELECT
+        id,
+        destination_id,
+        transport_type,
+        title,
+        description,
+        estimated_time,
+        estimated_cost_min,
+        estimated_cost_max,
+        instruction,
+        sort_order
+      FROM destination_transport_options
+      WHERE destination_id = ?
+        AND is_active = 1
+      ORDER BY
+        sort_order ASC,
+        id ASC
+    `;
+
+    const [rows] =
+      await pool.query(
+        transportSql,
+        [destinationId]
+      );
+
+    // ========================================================
+    // RESPONSE
+    // ========================================================
+
+    return res.status(200).json({
+      success: true,
+      data: rows,
+    });
+  } catch (error) {
+    console.error(
+      "getDestinationTransportOptions error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch destination transport options",
     });
   }
 };

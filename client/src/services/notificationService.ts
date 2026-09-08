@@ -7,7 +7,9 @@ const API_URL = "http://localhost:5000/api/notifications";
 const getToken = () => {
   return (
     localStorage.getItem("token") ||
-    sessionStorage.getItem("token")
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("token") ||
+    sessionStorage.getItem("accessToken")
   );
 };
 
@@ -20,7 +22,11 @@ const getHeaders = () => {
 
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
+    ...(token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {}),
   };
 };
 
@@ -38,32 +44,8 @@ export const getMyNotifications = async () => {
 
   if (!response.ok) {
     throw new Error(
-      data.message || "Failed to load notifications."
-    );
-  }
-
-  return data;
-};
-
-// =====================================================
-// GET UNREAD COUNT
-// =====================================================
-
-export const getUnreadNotificationCount = async () => {
-  const response = await fetch(
-    `${API_URL}/unread-count`,
-    {
-      method: "GET",
-      headers: getHeaders(),
-    }
-  );
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
       data.message ||
-        "Failed to load unread notification count."
+        "Failed to load notifications."
     );
   }
 
