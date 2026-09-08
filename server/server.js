@@ -10,6 +10,7 @@ import adminBookingRoutes from "./routes/adminBookingRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import paymentMethodRoutes from "./routes/paymentMethodRoutes.js";
+import destinationRoutes from "./routes/destinationRoutes.js";
 
 dotenv.config();
 
@@ -58,6 +59,8 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
 
 app.use("/api/payment-methods", paymentMethodRoutes);
+
+app.use("/api/destinations", destinationRoutes);
 
 app.get("/", async (req, res) => {
   try {
