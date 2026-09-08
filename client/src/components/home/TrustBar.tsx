@@ -1,21 +1,22 @@
-import Container from "../ui/Container";
 import {
-  MapPinned,
   BadgeCheck,
-  ShieldCheck,
+  Compass,
   Headphones,
+  ShieldCheck,
 } from "lucide-react";
+
+import Container from "../ui/Container";
 
 const benefits = [
   {
-    icon: MapPinned,
+    icon: Compass,
     title: "Explore Bangladesh",
-    description: "Discover beautiful destinations",
+    description: "Discover destinations worth visiting",
   },
   {
     icon: BadgeCheck,
     title: "Verified Information",
-    description: "Reliable travel details",
+    description: "Useful travel information in one place",
   },
   {
     icon: ShieldCheck,
@@ -25,48 +26,58 @@ const benefits = [
   {
     icon: Headphones,
     title: "Travel Support",
-    description: "We're here when you need us",
+    description: "Helpful resources when you need them",
   },
 ];
 
 const TrustBar = () => {
   return (
-    <section className="relative z-30 px-5 pt-8 sm:px-8 sm:pt-10">
+    <section className="bg-white py-8 md:py-10">
       <Container>
-        <div className="mx-auto max-w-6xl rounded-[24px] border border-[#e9e7df] bg-white px-5 py-5 shadow-[0_12px_40px_rgba(25,55,40,0.08)] sm:px-7 lg:py-6">
-          <div className="grid grid-cols-1 divide-y divide-[#ecebe5] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
 
-            {benefits.map((benefit) => {
-              const Icon = benefit.icon;
+        <div className="grid overflow-hidden rounded-[26px] border border-[#e7e5dc] bg-[#fbfaf7] sm:grid-cols-2 lg:grid-cols-4">
 
-              return (
-                <div
-                  key={benefit.title}
-                  className="flex items-center gap-4 px-2 py-4 sm:px-5 lg:py-2"
-                >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#edf3ee]">
-                    <Icon
-                      size={21}
-                      strokeWidth={1.8}
-                      className="text-[#1f5b43]"
-                    />
-                  </div>
+          {benefits.map((benefit, index) => {
+            const Icon = benefit.icon;
 
-                  <div>
-                    <h3 className="text-sm font-bold text-[#1c3027]">
-                      {benefit.title}
-                    </h3>
+            return (
+              <div
+                key={benefit.title}
+                className={`
+                  flex items-center gap-4 p-5 md:p-6
+                  ${
+                    index !== benefits.length - 1
+                      ? "border-b border-[#e7e5dc] sm:border-r lg:border-b-0"
+                      : ""
+                  }
+                  ${
+                    index === 1
+                      ? "sm:border-r-0 lg:border-r"
+                      : ""
+                  }
+                `}
+              >
 
-                    <p className="mt-1 text-[11px] leading-4 text-gray-500">
-                      {benefit.description}
-                    </p>
-                  </div>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e8f0e9] text-[#1f5b43]">
+                  <Icon size={21} strokeWidth={1.8} />
                 </div>
-              );
-            })}
 
-          </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#293a32]">
+                    {benefit.title}
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-gray-500">
+                    {benefit.description}
+                  </p>
+                </div>
+
+              </div>
+            );
+          })}
+
         </div>
+
       </Container>
     </section>
   );

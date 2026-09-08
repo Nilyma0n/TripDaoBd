@@ -1,299 +1,1183 @@
+# TripDaoBD — Updated Industry-Level Development Roadmap
+
+**Project Type:** Industry-Level Travel Ecosystem / Multi-Vendor Travel Marketplace
+**Current Stage:** Destination System → Backend Integration → Premium UI/UX
+**Goal:** Build a complete Bangladesh-focused travel ecosystem with customers, travel hosts, hotels, restaurants, transportation providers, emergency services, reviews, bookings, payments, AI assistance and role-based management.
 
 ---
 
-## 21. Priority Order (এখন থেকে)
+## 21. Updated Priority Order
 
-| Priority | কাজ |
-|---|---|
-| 🔴 P1 | STEP 01 বাকি অংশ শেষ করা: 404 page, error boundary, empty page cleanup |
-| 🟠 P2 | Premium UI/UX upgrade (STEP 05–06) |
-| 🟡 P3 | Database সম্পূর্ণ করা (Bookings, Payments, Invoices, Hotels, Restaurants ইত্যাদি টেবিল) |
-| 🟢 P4 | Role-based dashboard গুলো বানানো (Admin/Hotel/Restaurant/Transport/Photographer/Emergency) |
-| 🔵 P5 | Booking + Availability engine |
-| 🟣 P6 | Payment + Billing + Invoice |
-| ⚫ P7 | AI Assistant, Emergency backend, Weather, Analytics, Mobile App |
-
----
-
-## 22. Definition of Done
-
-TripDaoBD "industry-level" ধরা হবে যখন:
-- [ ] প্রতিটা major role-এর নিজস্ব dashboard আছে
-- [ ] Role permission ঠিকমতো কাজ করে
-- [ ] Secure register/login কাজ করে
-- [ ] Provider নিজের service manage করতে পারে
-- [ ] Customer search + book করতে পারে
-- [ ] Availability ঠিকভাবে auto-update হয়
-- [ ] Payment securely process হয়
-- [ ] Invoice/receipt generate হয়
-- [ ] Provider নিজের billing report দেখতে পায়
-- [ ] Super Admin পুরো platform manage করতে পারে
-- [ ] Notification কাজ করে
-- [ ] Messaging কাজ করে
-- [ ] Emergency system কাজ করে
-- [ ] Premium responsive UI সম্পূর্ণ
-- [ ] Dead button / broken route নাই
-- [ ] Loading/error/empty state আছে
-- [ ] Security testing সম্পূর্ণ
-- [ ] Production deployment স্থিতিশীল
+| Priority | কাজ                                                                                       | Status               |
+| -------- | ----------------------------------------------------------------------------------------- | -------------------- |
+| 🔴 P1    | STEP 01 — Core frontend stabilization: 404, Error Boundary, empty/duplicate pages cleanup | 🟡 In Progress       |
+| 🔴 P1    | Destination System — 64 Districts + 143 Tourist Destinations                              | 🟢 Data Ready        |
+| 🔴 P1    | Destination Database + Image Gallery + Features + Reviews backend                         | 🟡 In Progress       |
+| 🟠 P2    | Destination API + Frontend API Integration                                                | ⏳ Next               |
+| 🟠 P2    | Premium Destination Details + Gallery + Review UI                                         | ⏳ Planned            |
+| 🟠 P3    | Premium UI/UX Upgrade across the platform                                                 | ⏳ Planned            |
+| 🟡 P4    | Database expansion — Hotels, Restaurants, Transport, Services                             | ⏳ Planned            |
+| 🟢 P5    | Role-based dashboards — Admin/Hotel/Restaurant/Transport/Photographer/Emergency           | ⏳ Planned            |
+| 🔵 P6    | Booking + Availability Engine                                                             | 🟡 Foundation Exists |
+| 🟣 P7    | Payment + Billing + Invoice System                                                        | 🟡 Foundation Exists |
+| ⚫ P8     | Notifications + Messaging + Emergency Backend                                             | ⏳ Planned            |
+| ⚫ P9     | AI Travel Assistant + Weather/Disaster Alerts + Analytics                                 | ⏳ Planned            |
+| ⚫ P10    | Mobile App + Offline Travel Mode + SOS                                                    | ⏳ Planned            |
+| ⚫ P11    | Security Testing + Production Deployment + Monitoring                                     | ⏳ Planned            |
 
 ---
 
-## 23. Working Rule
+# 22. Destination System — New Architecture
 
-**এক সময়ে এক Phase, এক Feature। প্রতিটা কাজ শেষ করে test করে তারপর পরেরটায় যাও।**
+Destination system এখন শুধু static/mock data হিসেবে থাকবে না।
 
-Pipeline order: `Frontend → Backend → Database → Authentication → Roles → Booking → Payment`
+TripDaoBD-এর destination system হবে:
 
-### 🎯 NEXT IMMEDIATE TASK
+```text
+64 Districts
+     ↓
+8 Divisions
+     ↓
+143+ Tourist Destinations
+     ↓
+Destination Database
+     ↓
+Backend API
+     ↓
+Explore Page
+     ↓
+Destination Details
+```
 
-STEP 01 বাকি অংশ:
-1. `src/pages/NotFound/NotFound.tsx` বানানো + router-এ `path: "*"` route যোগ করা
-2. Route-level Error Boundary বানানো (React Router-এর `errorElement`)
-3. খালি duplicate folder cleanup: `src/pages/Profile/`, `src/pages/Register/`
-4. `AdminDashboard.tsx`, `AdminBookings.tsx`, `Restaurants.tsx` — এগুলা এখনো খালি, কী বানাবো ঠিক করা (route-এ যোগ করার আগে)
+প্রতিটি destination-এর নিজস্ব complete profile থাকবে।
 
-তারপর → **STEP 02 (Premium UI Upgrade)** → **STEP 07 (Database — Bookings/Payments টেবিল)**
+### Current Destination Data
 
+* 8 Divisions
+* 64 Districts
+* 143 Destinations
+* Multiple categories
+* Latitude / Longitude
+* Map URL
+* Best Season
+* Opening Hours
+* Entry Fee
+* Estimated Duration
+* Things To Do
+* Highlights
+* Featured / Popular status
 
+---
 
-USE tripdaobd;
+# 23. Destination Image System
 
--- ============================================================
--- TRIPDAOBD
--- Migration 003: Fix `users` table + create missing core tables
---
--- WHY THIS MIGRATION EXISTS
--- --------------------------------------------------------------
--- An audit of the backend found that several controllers already
--- query columns/tables that were never created by any existing
--- SQL file:
---
---   1. controllers/authController.js reads/writes
---      users.full_name, users.phone, users.profile_image,
---      users.is_verified — but database.sql only defines
---      users(id, name, email, password, created_at).
---      => registerUser() / loginUser() / updateProfile() would
---         throw "Unknown column" errors right now.
---
---   2. database/migrations/002_migrate_existing_users.sql reads
---      users.full_name and users.role, which also don't exist
---      yet — that migration cannot run successfully as-is.
---
---   3. controllers/notificationController.js,
---      bookingController.js and paymentController.js all
---      INSERT/SELECT against `notifications`, `bookings`, and
---      `payments` tables that have no CREATE TABLE statement
---      anywhere in the repo (payment.sql is just a sample SELECT,
---      not a schema file).
---
---   4. routes/bookingRoutes.js and adminBookingRoutes.js require
---      the permissions booking.view_all, booking.confirm,
---      booking.reject, booking.cancel_any — none of which were
---      inserted in 001_rbac_foundation.sql, so even an admin/
---      super_admin account could never pass those checks.
---
--- This migration fixes all four issues. Run it AFTER
--- 001_rbac_foundation.sql and BEFORE 002_migrate_existing_users.sql
--- (002 depends on users.full_name and users.role existing).
--- ============================================================
+প্রতিটি destination-এর **নিজস্ব আলাদা images** থাকবে।
 
+একটি destination-এর জন্য শুধু একটি image ব্যবহার করা হবে না।
 
--- ------------------------------------------------------------
--- 1. FIX USERS TABLE
--- ------------------------------------------------------------
+Example:
 
--- Add the columns the application code already expects.
-ALTER TABLE users
-  ADD COLUMN full_name VARCHAR(150) NULL AFTER id,
-  ADD COLUMN phone VARCHAR(30) NULL AFTER email,
-  ADD COLUMN profile_image VARCHAR(500) NULL AFTER password,
-  ADD COLUMN is_verified BOOLEAN NOT NULL DEFAULT FALSE AFTER profile_image,
-  ADD COLUMN role VARCHAR(30) NOT NULL DEFAULT 'user' AFTER is_verified;
+```text
+Cox's Bazar
+│
+├── hero.jpg
+├── beach.jpg
+├── sunset.jpg
+├── inani.jpg
+├── himchari.jpg
+└── sea-view.jpg
+```
 
--- Backfill full_name from the old `name` column so existing
--- accounts (if any) keep their data.
-UPDATE users
-SET full_name = name
-WHERE full_name IS NULL;
+Recommended structure:
 
--- full_name is required going forward.
-ALTER TABLE users
-  MODIFY COLUMN full_name VARCHAR(150) NOT NULL;
+```text
+client/public/images/destinations/
 
--- The old `name` column is superseded by `full_name` and is not
--- referenced anywhere in the current codebase. Safe to drop.
-ALTER TABLE users
-  DROP COLUMN name;
+├── coxs-bazar/
+│   ├── hero.jpg
+│   ├── beach.jpg
+│   ├── sunset.jpg
+│   ├── inani.jpg
+│   └── himchari.jpg
+│
+├── saint-martin/
+│   ├── hero.jpg
+│   ├── island.jpg
+│   ├── beach.jpg
+│   └── sunset.jpg
+│
+├── sundarbans/
+│   ├── hero.jpg
+│   ├── forest.jpg
+│   ├── river.jpg
+│   └── wildlife.jpg
+│
+└── ...
+```
 
+### Destination Image Requirements
 
--- ------------------------------------------------------------
--- 2. NOTIFICATIONS TABLE
--- ------------------------------------------------------------
+* Hero/Main Image
+* Gallery Images
+* Destination-specific images
+* Image alt text
+* Image ordering
+* Future image optimization
+* Future CDN/storage support
 
-CREATE TABLE IF NOT EXISTS notifications (
-    id INT NOT NULL AUTO_INCREMENT,
-    user_id INT NOT NULL,
+---
 
-    title VARCHAR(200) NOT NULL,
-    message VARCHAR(500) NOT NULL,
-    type VARCHAR(50) NOT NULL DEFAULT 'system',
-    link VARCHAR(255) NULL,
+# 24. Destination Database
 
-    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+Destination database foundation has already been created.
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+### Main table
 
-    PRIMARY KEY (id),
+```text
+destinations
+```
 
-    INDEX idx_notifications_user_id (user_id),
-    INDEX idx_notifications_user_unread (user_id, is_read),
+Contains:
 
-    CONSTRAINT fk_notifications_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-);
+* name
+* slug
+* district
+* division
+* category
+* description
+* hero image
+* coordinates
+* map URL
+* season
+* opening hours
+* entry fee
+* duration
+* rating
+* review count
+* featured
+* popular
 
+### Related tables
 
--- ------------------------------------------------------------
--- 3. BOOKINGS TABLE
---    (columns match controllers/bookingController.js exactly)
--- ------------------------------------------------------------
+```text
+destinations
+      │
+      ├── destination_images
+      │
+      ├── destination_highlights
+      │
+      ├── destination_activities
+      │
+      └── destination_reviews
+```
 
-CREATE TABLE IF NOT EXISTS bookings (
-    id INT NOT NULL AUTO_INCREMENT,
-    user_id INT NOT NULL,
+This makes the destination system scalable instead of storing everything inside one huge table.
 
-    full_name VARCHAR(150) NOT NULL,
-    email VARCHAR(150) NOT NULL,
-    phone VARCHAR(30) NOT NULL,
+---
 
-    guests INT NOT NULL DEFAULT 1,
-    rooms INT NOT NULL DEFAULT 1,
+# 25. Destination Details Page
 
-    check_in DATE NOT NULL,
-    check_out DATE NOT NULL,
+When a user clicks:
 
-    special_request VARCHAR(500) NULL,
+```text
+Explore
+   ↓
+Destination Card
+   ↓
+View Details
+```
 
-    destination VARCHAR(200) NOT NULL,
-    location VARCHAR(200) NOT NULL,
+they will see a complete destination profile.
 
-    room_price DECIMAL(10,2) NOT NULL DEFAULT 0,
-    service_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
-    vat DECIMAL(10,2) NOT NULL DEFAULT 0,
-    total_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+### Destination Details should contain
 
-    status ENUM(
-        'Pending',
-        'Confirmed',
-        'In Progress',
-        'Completed',
-        'Cancelled',
-        'Rejected'
-    ) NOT NULL DEFAULT 'Pending',
+1. Hero Image
+2. Image Gallery
+3. Destination Name
+4. District
+5. Division
+6. Category
+7. Rating
+8. Total Reviews
+9. Description
+10. Highlights / Features
+11. Things To Do
+12. Best Season
+13. Opening Hours
+14. Entry Fee
+15. Estimated Duration
+16. Map / Location
+17. Reviews
+18. Write a Review
+19. Related / Nearby Destinations
+20. Future accommodation / transport integration
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP,
+---
 
-    PRIMARY KEY (id),
+# 26. Destination Image Gallery UX
 
-    INDEX idx_bookings_user_id (user_id),
-    INDEX idx_bookings_status (status),
+Inside Destination Details:
 
-    CONSTRAINT fk_bookings_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-);
+```text
+┌─────────────────────────────────────┐
+│                                     │
+│          MAIN DESTINATION IMAGE     │
+│                                     │
+└─────────────────────────────────────┘
 
+[ Image 1 ] [ Image 2 ] [ Image 3 ]
 
--- ------------------------------------------------------------
--- 4. PAYMENTS TABLE
---    (columns match controllers/paymentController.js exactly)
--- ------------------------------------------------------------
+[ Image 4 ] [ Image 5 ] [ Image 6 ]
+```
 
-CREATE TABLE IF NOT EXISTS payments (
-    id INT NOT NULL AUTO_INCREMENT,
-    booking_id INT NOT NULL,
-    user_id INT NOT NULL,
+User can:
 
-    amount DECIMAL(10,2) NOT NULL,
+* Click an image
+* Open larger preview
+* Navigate next/previous
+* View multiple destination images
+* Close gallery
+* Eventually support fullscreen/lightbox
 
-    payment_method ENUM(
-        'bkash',
-        'nagad',
-        'card',
-        'bank'
-    ) NOT NULL,
+---
 
-    transaction_id VARCHAR(100) NOT NULL,
+# 27. Destination Features / Highlights
 
-    payment_status ENUM(
-        'Pending',
-        'Paid',
-        'Failed',
-        'Refunded',
-        'Partially Refunded'
-    ) NOT NULL DEFAULT 'Pending',
+Every destination can have multiple highlights.
 
-    paid_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+Example:
 
-    PRIMARY KEY (id),
+```text
+Cox's Bazar
 
-    UNIQUE KEY uk_payments_transaction_id (transaction_id),
+✓ World's longest natural sea beach
+✓ Beautiful sunset
+✓ Inani Beach nearby
+✓ Himchari National Park nearby
+```
 
-    INDEX idx_payments_booking_id (booking_id),
-    INDEX idx_payments_user_id (user_id),
+Database:
 
-    CONSTRAINT fk_payments_booking
-        FOREIGN KEY (booking_id)
-        REFERENCES bookings(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+```text
+destination_highlights
+```
 
-    CONSTRAINT fk_payments_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-);
+Frontend:
 
+```text
+Destination
+   ↓
+Features / Highlights
+```
 
--- ------------------------------------------------------------
--- 5. MISSING ADMIN BOOKING PERMISSIONS
---
---    routes/bookingRoutes.js and adminBookingRoutes.js already
---    require these permission names, but 001_rbac_foundation.sql
---    never created them — so no role (not even admin) could ever
---    pass those route checks.
--- ------------------------------------------------------------
+---
 
-INSERT IGNORE INTO permissions (name, description)
-VALUES
-    ('booking.view_all', 'View all bookings across the platform'),
-    ('booking.confirm', 'Confirm a pending booking'),
-    ('booking.reject', 'Reject a pending booking'),
-    ('booking.cancel_any', 'Cancel any booking regardless of owner');
+# 28. Things To Do
 
--- Grant them to the admin role (super_admin already receives
--- every permission automatically via its CROSS JOIN rule in
--- 001_rbac_foundation.sql, so no change needed there).
-INSERT IGNORE INTO role_permissions (role_id, permission_id)
-SELECT
-    r.id,
-    p.id
-FROM roles r
-JOIN permissions p
-WHERE r.name = 'admin'
-AND p.name IN (
-    'booking.view_all',
-    'booking.confirm',
-    'booking.reject',
-    'booking.cancel_any'
-);
+Each destination can have multiple activities.
+
+Example:
+
+```text
+Things To Do
+
+• Beach walking
+• Sunset photography
+• Surfing
+• Local seafood
+• Visit Inani Beach
+```
+
+Database:
+
+```text
+destination_activities
+```
+
+---
+
+# 29. Destination Review System
+
+Reviews will be **database-driven**, not hardcoded.
+
+Each review contains:
+
+```text
+user_id
+user_name
+destination_id
+rating
+comment
+review_date
+created_at
+```
+
+### User Flow
+
+```text
+User visits destination
+        ↓
+Reads reviews
+        ↓
+Clicks "Write a Review"
+        ↓
+Checks authentication
+        ↓
+Selects 1–5 stars
+        ↓
+Writes comment
+        ↓
+Submit
+        ↓
+Backend validation
+        ↓
+MySQL
+        ↓
+Review appears on destination
+```
+
+### Authentication Rule
+
+Logged-in user:
+
+```text
+Write a Review
+```
+
+Not logged in:
+
+```text
+Please login to write a review.
+```
+
+---
+
+# 30. Dynamic Rating System
+
+Eventually destination rating will be calculated from actual reviews.
+
+Example:
+
+```text
+Reviews:
+5 ⭐
+5 ⭐
+4 ⭐
+5 ⭐
+4 ⭐
+
+Average = 4.6 ⭐
+```
+
+The system should eventually update:
+
+```text
+destinations.rating
+destinations.total_reviews
+```
+
+based on actual destination reviews.
+
+This prevents fake/static review counts from being used as the platform grows.
+
+---
+
+# 31. Destination API
+
+Backend will expose public destination APIs.
+
+Initial API structure:
+
+```text
+GET /api/destinations
+GET /api/destinations/:slug
+```
+
+Filtering:
+
+```text
+GET /api/destinations?division=Sylhet
+GET /api/destinations?district=Sylhet
+GET /api/destinations?category=Waterfall
+GET /api/destinations?featured=true
+GET /api/destinations?popular=true
+GET /api/destinations?search=jaflong
+```
+
+Pagination:
+
+```text
+GET /api/destinations?page=1&limit=9
+```
+
+The API should support combined filters where appropriate.
+
+---
+
+# 32. Frontend Destination Integration
+
+Current:
+
+```text
+Explore.tsx
+     ↓
+mock destinations.ts
+```
+
+Target:
+
+```text
+Explore.tsx
+     ↓
+Destination API
+     ↓
+MySQL
+```
+
+And:
+
+```text
+DestinationDetails.tsx
+     ↓
+GET /api/destinations/:slug
+     ↓
+MySQL
+     ↓
+Destination
+ + Images
+ + Highlights
+ + Activities
+ + Reviews
+```
+
+The existing UI should be preserved wherever possible while replacing mock-data dependency with API data.
+
+---
+
+# 33. Destination Seed Strategy
+
+The current TypeScript dataset contains:
+
+```text
+143 destinations
+```
+
+We should **not manually write 143 SQL INSERT statements**.
+
+Instead:
+
+```text
+destinations.ts
+      ↓
+One-time seed/export process
+      ↓
+MySQL
+```
+
+Seed must be:
+
+* Idempotent
+* Re-runnable
+* Duplicate-safe
+* Slug-based
+* Able to insert related images
+* Able to insert highlights
+* Able to insert activities
+* Able to insert existing review data where available
+
+### Important
+
+`nearbyHotels` and `hotels` should **not** be inserted into destination tables yet because the Hotel system has not been created.
+
+Hotel relationships will be implemented later when the accommodation database is ready.
+
+---
+
+# 34. Migration Numbering Rule
+
+Migration numbering must remain sequential and unique.
+
+Current destination migration:
+
+```text
+003_destinations.sql
+```
+
+Therefore, the older migration documentation referring to another:
+
+```text
+003 — Fix users + core tables
+```
+
+must **not reuse the same migration number**.
+
+The migration history should be audited and renumbered/documented consistently before adding future migrations.
+
+Future example:
+
+```text
+001_rbac_foundation.sql
+002_migrate_existing_users.sql
+003_destinations.sql
+004_destination_seed.sql
+005_hotels.sql
+006_restaurants.sql
+007_transportation.sql
+...
+```
+
+Actual numbering should follow the migration files that exist in the repository.
+
+---
+
+# 35. Accommodation System
+
+After Destination System stabilizes:
+
+```text
+Hotels
+Guest Houses
+Resorts
+Hostels
+Homestays
+```
+
+Hotel system should eventually contain:
+
+* Hotel profile
+* Room types
+* Room images
+* Amenities
+* Pricing
+* Availability
+* Policies
+* Location
+* Ratings
+* Reviews
+* Provider/owner
+* Booking integration
+
+Destination → nearby accommodation relationship will then become database-driven.
+
+---
+
+# 36. Restaurant System
+
+Restaurant marketplace:
+
+```text
+Restaurant
+├── Profile
+├── Images
+├── Menu
+├── Categories
+├── Opening Hours
+├── Location
+├── Ratings
+├── Reviews
+└── Booking / Ordering
+```
+
+Future destination integration:
+
+```text
+Destination
+   ↓
+Nearby Restaurants
+```
+
+---
+
+# 37. Transportation System
+
+Support:
+
+* Bus
+* Train
+* Launch
+* Boat
+* Car rental
+* CNG
+* Private transport
+* Tour transport
+
+Future features:
+
+* Schedule
+* Route
+* Seat availability
+* Pricing
+* Booking
+* Provider dashboard
+
+---
+
+# 38. Role-Based Platform
+
+The platform will eventually support:
+
+```text
+Super Admin
+Admin
+Traveler / Customer
+Hotel Provider
+Restaurant Provider
+Transport Provider
+Tour Host
+Photographer
+Emergency Service Provider
+Content / Blog Manager
+```
+
+Each role will receive appropriate:
+
+* Dashboard
+* Permissions
+* CRUD access
+* Analytics
+* Booking management
+* Notifications
+
+RBAC foundation is already implemented and will be expanded as new modules are added.
+
+---
+
+# 39. Booking System
+
+Booking architecture:
+
+```text
+Customer
+   ↓
+Search
+   ↓
+Destination / Service
+   ↓
+Availability
+   ↓
+Booking
+   ↓
+Payment
+   ↓
+Confirmation
+   ↓
+Notification
+   ↓
+Invoice
+```
+
+Booking system must eventually support:
+
+* Destination/service selection
+* Date
+* Guests
+* Rooms/seats
+* Availability
+* Pricing
+* Service fee
+* VAT
+* Booking status
+* Cancellation
+* Confirmation
+* Notifications
+
+---
+
+# 40. Payment + Billing
+
+Payment methods:
+
+```text
+bKash
+Nagad
+Card
+Bank
+```
+
+Future billing system:
+
+```text
+Booking
+   ↓
+Payment
+   ↓
+Transaction
+   ↓
+Invoice
+   ↓
+Receipt
+```
+
+Provider side:
+
+```text
+Revenue
+Transactions
+Commission
+Refunds
+Billing Reports
+```
+
+---
+
+# 41. Emergency Travel System
+
+TripDaoBD will include:
+
+* Emergency contacts
+* Police
+* Fire Service
+* Ambulance
+* Hospitals
+* Tourist Police
+* Nearby emergency services
+* SOS
+* Location-based emergency assistance
+
+Future:
+
+```text
+User Location
+     ↓
+Nearest Emergency Services
+     ↓
+Call / Navigate / SOS
+```
+
+---
+
+# 42. Weather + Disaster Alerts
+
+Destination-aware weather:
+
+```text
+Destination
+     ↓
+Coordinates
+     ↓
+Weather API
+     ↓
+Current Weather
+Forecast
+Warnings
+```
+
+Future disaster integration:
+
+* Cyclone alerts
+* Flood alerts
+* Heavy rainfall
+* Landslide warnings
+* Earthquake information
+* Coastal warnings
+
+---
+
+# 43. AI Travel Assistant
+
+Future AI assistant:
+
+```text
+User
+ ↓
+AI Travel Assistant
+ ↓
+Destination Knowledge
+ ↓
+Weather
+ ↓
+Hotels
+ ↓
+Restaurants
+ ↓
+Transport
+ ↓
+Emergency
+ ↓
+Personalized Trip Plan
+```
+
+Possible features:
+
+* Destination recommendation
+* Itinerary generation
+* Budget planning
+* Hotel recommendation
+* Restaurant recommendation
+* Transport suggestion
+* Weather-aware planning
+* Emergency guidance
+
+---
+
+# 44. Notification + Messaging
+
+Notification system:
+
+```text
+Booking
+Payment
+Review
+System
+Emergency
+Promotions
+```
+
+Messaging:
+
+```text
+Traveler ↔ Provider
+Traveler ↔ Tour Host
+Customer ↔ Support
+```
+
+Future support for:
+
+* Real-time messaging
+* Read/unread
+* Attachments
+* Notifications
+* Conversation history
+
+---
+
+# 45. Admin Panel
+
+Admin panel will be built **after the core public systems are stable**.
+
+Admin will eventually manage:
+
+```text
+Dashboard
+Users
+Roles
+Permissions
+Destinations
+Images
+Reviews
+Hotels
+Restaurants
+Transport
+Bookings
+Payments
+Reports
+Notifications
+Emergency Services
+Content
+```
+
+Admin destination management:
+
+```text
+Create Destination
+Edit Destination
+Delete Destination
+Upload Images
+Manage Gallery
+Manage Features
+Manage Activities
+Moderate Reviews
+Feature / Unfeature
+Publish / Unpublish
+```
+
+---
+
+# 46. Premium UI/UX
+
+Premium UI will focus on:
+
+* Responsive design
+* Mobile-first behavior
+* Consistent spacing
+* Typography
+* Cards
+* Gallery
+* Animations
+* Hover states
+* Loading states
+* Skeletons
+* Empty states
+* Error states
+* Toast notifications
+* Accessible forms
+* Dark/light considerations where appropriate
+
+No dead buttons.
+
+No broken routes.
+
+No fake interactions.
+
+---
+
+# 47. Security
+
+Security checklist:
+
+* Secure authentication
+* Password hashing
+* JWT validation
+* RBAC
+* Permission checks
+* Input validation
+* SQL injection prevention
+* XSS protection
+* CORS configuration
+* Rate limiting
+* Secure error handling
+* Sensitive data protection
+* File upload validation
+* Review authorization
+* Booking authorization
+* Provider authorization
+* Admin authorization
+
+---
+
+# 48. Testing Strategy
+
+Every major feature follows:
+
+```text
+Build
+ ↓
+Backend Test
+ ↓
+Database Test
+ ↓
+Frontend Test
+ ↓
+Integration Test
+ ↓
+Edge Cases
+ ↓
+Build Check
+ ↓
+Next Feature
+```
+
+Before moving forward:
+
+```text
+npm run build
+```
+
+must remain successful.
+
+Warnings may be addressed separately, but errors must not be ignored.
+
+---
+
+# 49. Definition of Done
+
+TripDaoBD will be considered **industry-level** when:
+
+* [ ] 64 districts are represented
+* [ ] 143+ destinations are database-driven
+* [ ] Every destination can have its own image gallery
+* [ ] Destination details are API-driven
+* [ ] Destination features/highlights work
+* [ ] Things To Do works
+* [ ] Destination reviews work
+* [ ] Authenticated users can write reviews
+* [ ] Ratings update correctly
+* [ ] Major roles have dedicated dashboards
+* [ ] Role permissions work correctly
+* [ ] Secure registration/login works
+* [ ] Providers can manage their services
+* [ ] Customers can search and book
+* [ ] Availability updates correctly
+* [ ] Payments process securely
+* [ ] Invoice/receipt generation works
+* [ ] Providers can view billing reports
+* [ ] Super Admin can manage the platform
+* [ ] Notifications work
+* [ ] Messaging works
+* [ ] Emergency system works
+* [ ] Weather/disaster system works
+* [ ] AI Travel Assistant works
+* [ ] Premium responsive UI is complete
+* [ ] No dead buttons
+* [ ] No broken routes
+* [ ] Loading/error/empty states exist
+* [ ] Security testing is complete
+* [ ] Production deployment is stable
+* [ ] Monitoring/logging is implemented
+
+---
+
+# 50. Working Rule
+
+## One Phase → One Feature → Test → Verify → Next
+
+We will **not randomly jump between modules**.
+
+For each feature:
+
+```text
+1. Inspect existing code
+2. Design database structure
+3. Create migration
+4. Seed/test data
+5. Build backend API
+6. Test API
+7. Connect frontend
+8. Build UI
+9. Test edge cases
+10. Run production build
+11. Fix errors
+12. Mark feature complete
+13. Move to next feature
+```
+
+### Important Rule
+
+Existing working functionality should **not be unnecessarily rewritten**.
+
+We will extend the current system and preserve working code wherever possible.
+
+---
+
+# 51. Current Development Pipeline
+
+Current recommended order:
+
+```text
+STEP 01
+Core Frontend Stabilization
+        ↓
+STEP 02
+Destination Database + Seed
+        ↓
+STEP 03
+Destination API
+        ↓
+STEP 04
+Explore API Integration
+        ↓
+STEP 05
+Destination Details + Image Gallery
+        ↓
+STEP 06
+Destination Reviews + Rating
+        ↓
+STEP 07
+Premium UI/UX
+        ↓
+STEP 08
+Hotels / Accommodation
+        ↓
+STEP 09
+Restaurants
+        ↓
+STEP 10
+Transportation
+        ↓
+STEP 11
+Role-Based Dashboards
+        ↓
+STEP 12
+Booking + Availability
+        ↓
+STEP 13
+Payment + Billing + Invoice
+        ↓
+STEP 14
+Notifications + Messaging
+        ↓
+STEP 15
+Emergency System
+        ↓
+STEP 16
+Weather + Disaster Alerts
+        ↓
+STEP 17
+AI Travel Assistant
+        ↓
+STEP 18
+Analytics
+        ↓
+STEP 19
+Mobile App
+        ↓
+STEP 20
+Security + Testing + Production
+```
+
+---
+
+# 52. 🎯 NEXT IMMEDIATE TASK
+
+The **Destination System is now the immediate development focus**.
+
+### Next implementation order:
+
+**1.** Inspect `package.json` and available TypeScript execution tools.
+
+**2.** Create a safe one-time destination seed/export process from the existing `destinations.ts`.
+
+**3.** Seed:
+
+```text
+destinations
+destination_images
+destination_highlights
+destination_activities
+destination_reviews
+```
+
+**4.** Verify MySQL counts.
+
+**5.** Build:
+
+```text
+GET /api/destinations
+GET /api/destinations/:slug
+```
+
+with filtering + pagination.
+
+**6.** Connect `Explore.tsx` to the API.
+
+**7.** Update `DestinationDetails.tsx` to fetch the selected destination from the API.
+
+**8.** Implement destination-specific multiple image gallery.
+
+**9.** Implement Features / Highlights + Things To Do.
+
+**10.** Implement Review API + authenticated Write Review form.
+
+**11.** Calculate/update destination rating and review count.
+
+**12.** Test the complete flow:
+
+```text
+Explore
+ ↓
+Search / Filter
+ ↓
+Destination Card
+ ↓
+View Details
+ ↓
+Gallery
+ ↓
+Features
+ ↓
+Things To Do
+ ↓
+Reviews
+ ↓
+Write Review
+ ↓
+Login
+ ↓
+Submit Review
+ ↓
+Database
+ ↓
+Updated Rating
+```
+
+Only after this destination flow is stable will we move to the next major marketplace module.

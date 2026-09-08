@@ -37,6 +37,7 @@ export interface Destination {
     | "Lake"
     | "Tea Garden"
     | "Haor"
+    | "Nature"
     | "Waterfall";
 
   shortDescription: string;

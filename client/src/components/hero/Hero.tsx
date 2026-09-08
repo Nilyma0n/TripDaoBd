@@ -1,99 +1,107 @@
+import { ArrowRight, MapPin, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Play } from "lucide-react";
+
 import heroImage from "../../assets/images/hero.jpg";
 
 const Hero = () => {
   return (
-    <section className="relative min-h-[720px] overflow-hidden bg-[#183d2e] sm:min-h-[760px]">
+    <section className="relative min-h-[680px] overflow-hidden sm:min-h-[720px]">
 
-      {/* ================= HERO IMAGE ================= */}
+      {/* ================= BACKGROUND ================= */}
+
       <img
         src={heroImage}
-        alt="Beautiful Bangladesh landscape"
+        alt="Beautiful destination in Bangladesh"
         className="absolute inset-0 h-full w-full object-cover"
       />
 
-      {/* ================= OVERLAYS ================= */}
-      <div className="absolute inset-0 bg-black/20" />
+      {/* ================= OVERLAY ================= */}
 
-      <div className="absolute inset-0 bg-gradient-to-r from-[#102b20]/80 via-[#183d2e]/35 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/35 to-black/10" />
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
 
       {/* ================= DECORATIVE SHAPE ================= */}
-      <div className="absolute -bottom-32 -left-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-      <div className="absolute -right-20 top-24 h-72 w-72 rounded-full bg-[#e99a36]/10 blur-3xl" />
+
+      <div className="absolute -bottom-28 -right-28 hidden h-72 w-72 rounded-full border-[45px] border-white/10 lg:block" />
 
       {/* ================= CONTENT ================= */}
-      <div className="relative z-10 mx-auto flex min-h-[720px] max-w-7xl items-center px-5 pb-32 pt-28 sm:pb-44 sm:min-h-[760px] sm:px-8 sm:pb-44">
 
-        <div className="max-w-[700px]">
+      <div className="relative mx-auto flex min-h-[680px] max-w-7xl items-center px-5 pb-32 pt-28 sm:min-h-[720px] sm:px-6">
 
-          {/* Eyebrow */}
-          <div className="mb-5 flex items-center gap-3">
-            <span className="h-px w-9 bg-[#e99a36]" />
+        <div className="max-w-3xl text-white">
 
-            <p className="text-[11px] font-bold tracking-[3px] text-[#f5b45c] sm:text-xs">
-              EXPLORE BANGLADESH
-            </p>
+          {/* SMALL LABEL */}
+
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[1.8px] backdrop-blur-md">
+
+            <Sparkles size={14} />
+
+            Explore Bangladesh
+
           </div>
 
-          {/* Heading */}
-          <h1 className="max-w-3xl text-[42px] font-extrabold sm:text-6xl lg:text-[76px] leading-[1.04] tracking-[-1.5px] text-white sm:text-6xl lg:text-[76px]">
+          {/* HEADING */}
 
-            Discover Nature.
+          <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl md:text-7xl">
+
+            Discover nature.
             <br />
 
-            <span className="text-[#e8a044]">
-              Find Your Escape.
+            <span className="text-[#f2b65f]">
+              Find your escape.
             </span>
+
           </h1>
 
-          {/* Description */}
-          <p className="mt-6 max-w-xl text-base leading-7 text-white/85 sm:text-lg">
-            Discover breathtaking beaches, green hills, peaceful
-            forests and hidden gems across Bangladesh.
-            Your next adventure starts here.
+          {/* DESCRIPTION */}
+
+          <p className="mt-6 max-w-2xl text-base leading-7 text-white/80 sm:text-lg">
+            Explore beautiful beaches, peaceful hills, lush forests,
+            tea gardens and hidden gems across Bangladesh.
           </p>
 
-          {/* Buttons */}
+          {/* BUTTONS */}
+
           <div className="mt-8 flex flex-wrap items-center gap-3">
 
             <Link
               to="/explore"
-              className="group inline-flex items-center gap-3 rounded-full bg-[#e99a36] px-6 py-3.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#d98925] hover:shadow-xl sm:px-7"
+              className="inline-flex items-center gap-2 rounded-full bg-[#e99a36] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-black/10 transition hover:bg-[#d98927]"
             >
-              Explore Destinations
+              Explore destinations
 
-              <ArrowRight
-                size={18}
-                className="transition-transform group-hover:translate-x-1"
-              />
+              <ArrowRight size={17} />
             </Link>
 
             <Link
-              to="/features"
-              className="group inline-flex items-center gap-3 rounded-full border border-white/40 bg-white/10 px-5 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white hover:text-[#183d2e]"
+              to="/about"
+              className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3.5 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/20"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#183d2e]">
-                <Play size={12} fill="currentColor" />
-              </span>
-
-              Discover More
+              Discover TripDaoBD
             </Link>
+
           </div>
 
-          {/* Small trust line */}
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-white/75">
-            <span>✓ Local destinations</span>
-            <span>✓ Easy booking</span>
-            <span>✓ Trusted travel experience</span>
+          {/* LOCATION INDICATOR */}
+
+          <div className="mt-9 flex items-center gap-2 text-sm text-white/70">
+
+            <MapPin
+              size={16}
+              className="text-[#f2b65f]"
+            />
+
+            <span>
+              Discover destinations across Bangladesh
+            </span>
+
           </div>
+
         </div>
+
       </div>
 
-      {/* ================= BOTTOM FADE ================= */}
-      <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[#f7f5ef] to-transparent" />
     </section>
   );
 };

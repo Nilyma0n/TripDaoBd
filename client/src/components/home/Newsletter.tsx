@@ -1,49 +1,48 @@
-import { ArrowRight, Mail } from "lucide-react";
+import {
+  ArrowRight,
+  Mail,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+
 import Container from "../ui/Container";
 
 const Newsletter = () => {
   return (
-    <section className="bg-white py-14 sm:py-16">
+    <section className="bg-[#f7f5ef] py-14">
       <Container>
 
-        <div className="mx-auto max-w-3xl rounded-[26px] border border-[#e4e3da] bg-[#f7f5ef] px-6 py-9 text-center sm:px-10">
+        <div className="rounded-[28px] border border-[#e4e2d8] bg-white p-7 md:p-10">
 
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#1f5b43] shadow-sm">
-            <Mail size={21} />
-          </div>
+          <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
 
-          <p className="mt-4 text-[10px] font-bold uppercase tracking-[2.5px] text-[#1f5b43]">
-            Stay Inspired
-          </p>
+            <div className="flex items-start gap-4">
 
-          <h2 className="mt-2 text-2xl font-extrabold text-[#172c23] sm:text-3xl">
-            Travel inspiration, delivered
-          </h2>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#edf3ee] text-[#1f5b43]">
+                <Mail size={22} />
+              </div>
 
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-500">
-            Get destination ideas, travel tips and useful updates from
-            TripDaoBD.
-          </p>
+              <div>
+                <h2 className="text-xl font-extrabold text-[#293a32]">
+                  Get travel inspiration
+                </h2>
 
-          <form className="mx-auto mt-6 flex max-w-lg flex-col gap-2 sm:flex-row">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="min-w-0 flex-1 rounded-full border border-[#dcdcd3] bg-white px-5 py-3.5 text-sm text-gray-700 outline-none placeholder:text-gray-400 focus:border-[#1f5b43]"
-            />
+                <p className="mt-1 max-w-xl text-sm leading-6 text-gray-500">
+                  Receive destination guides, travel ideas and useful updates
+                  from TripDaoBD.
+                </p>
+              </div>
 
-            <button
-              type="submit"
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-[#1f5b43] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#174a36]"
+            </div>
+
+            <Link
+              to="/newsletter"
+              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#1f5b43] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#174a36]"
             >
-              Subscribe
+              Learn more
+              <ArrowRight size={16} />
+            </Link>
 
-              <ArrowRight
-                size={16}
-                className="transition-transform group-hover:translate-x-1"
-              />
-            </button>
-          </form>
+          </div>
 
         </div>
 

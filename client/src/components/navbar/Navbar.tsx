@@ -1,198 +1,420 @@
-import { useEffect, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
-  Search,
-  Menu,
-  X,
+  ChevronDown,
+  Globe,
   Heart,
-  User,
   LogOut,
-  MapPin,
+  Menu,
+  Search,
+  User,
 } from "lucide-react";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
 import { useAuth } from "../../hooks/useAuth";
+import MobileMenu from "./MobileMenu";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { user, logout } = useAuth();
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
-  // Change navbar appearance when user scrolls
-useEffect(() => {
-  const handleScroll = () => {
-    setScrolled(window.scrollY > 40);
-  };
+  /* =====================================================
+     HOME PAGE
+  ===================================================== */
 
-  window.addEventListener("scroll", handleScroll);
+  const isHome = location.pathname === "/";
 
-  return () => {
-    window.removeEventListener("scroll", handleScroll);
-  };
-}, []);
+  /*
+   * We intentionally don't use an effect to close menus
+   * when the route changes. Navigation links call onClose()
+   * directly, avoiding react-hooks/set-state-in-effect.
+   */
+
+  /* =====================================================
+     LOGOUT
+  ===================================================== */
 
   const handleLogout = () => {
     logout();
+    setMobileOpen(false);
     navigate("/");
+  };
+
+  /* =====================================================
+     ACTIVE LINK
+  ===================================================== */
+
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+
+    return (
+      location.pathname === path ||
+      location.pathname.startsWith(`${path}/`)
+    );
+  };
+
+  /* =====================================================
+     CLOSE MENUS
+  ===================================================== */
+
+  const closeMobileMenu = () => {
     setMobileOpen(false);
   };
 
-  const navItems = [
-    { label: "Home", path: "/" },
-    { label: "Destinations", path: "/explore" },
-    { label: "Hotels", path: "/hotels" },
-    { label: "Transportation", path: "/transportation" },
-    { label: "Blog", path: "/blog" },
-    { label: "About", path: "/about" },
-  ];
+  /* =====================================================
+     COLORS
+  ===================================================== */
+
+  /*
+   * Home:
+   * transparent navbar + white text
+   *
+   * Other pages:
+   * white navbar + dark green text
+   */
+
+  const textClass = isHome
+    ? "text-white"
+    : "text-[#24352d]";
+
+  const hoverClass = isHome
+    ? "hover:text-white"
+    : "hover:text-[#1f5b43]";
 
   return (
     <>
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "bg-white/95 shadow-sm backdrop-blur-xl"
-            : "bg-transparent"
-        }`}
-      >
-        <div className="mx-auto flex h-[78px] max-w-7xl items-center justify-between px-5 sm:px-8">
+      {/* =================================================
+          NAVBAR
+      ================================================= */}
 
-          {/* ================= LOGO ================= */}
+      <header
+        className={`
+          fixed left-0 top-0 z-50 w-full
+          transition-all duration-300
+          ${
+            isHome
+              ? "bg-transparent"
+              : "border-b border-black/[0.05] bg-white/95 shadow-[0_4px_25px_rgba(0,0,0,0.06)] backdrop-blur-xl"
+          }
+        `}
+      >
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-6">
+
+          {/* =================================================
+              LOGO
+          ================================================= */}
+
           <Link
             to="/"
-            className="group flex items-center gap-2.5"
+            onClick={() => {
+              setMobileOpen(false);
+              setMoreOpen(false);
+            }}
+            className="group flex shrink-0 items-center gap-3"
           >
+            {/* Logo circle */}
+
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
-                scrolled
-                  ? "bg-[#e9f0e9]"
-                  : "bg-white/90"
-              }`}
+              className={`
+                flex h-11 w-11 items-center justify-center
+                rounded-full transition
+                ${
+                  isHome
+                    ? "bg-white text-[#1f5b43]"
+                    : "bg-[#edf3ee] text-[#1f5b43]"
+                }
+              `}
             >
-              <MapPin
-                size={22}
-                strokeWidth={2.3}
-                className="text-[#1f5b43]"
-              />
+              <Globe size={24} strokeWidth={2} />
             </div>
 
+            {/* Logo text */}
+
             <div className="leading-none">
-              <div
-                className={`text-[22px] font-extrabold tracking-tight ${
-                  scrolled ? "text-[#173c2d]" : "text-white"
-                }`}
+
+              <h1
+                className={`
+                  text-[23px] font-extrabold tracking-tight
+                  transition-colors
+                  ${
+                    isHome
+                      ? "text-white"
+                      : "text-[#1f5b43]"
+                  }
+                `}
               >
                 TripDaoBD
-              </div>
+              </h1>
 
-              <div
-                className={`mt-1 text-[8px] font-medium tracking-[2px] ${
-                  scrolled
-                    ? "text-gray-500"
-                    : "text-white/75"
-                }`}
+              <p
+                className={`
+                  mt-1 text-[8px] font-bold
+                  uppercase tracking-[2px]
+                  ${
+                    isHome
+                      ? "text-white/70"
+                      : "text-[#829189]"
+                  }
+                `}
               >
-                EXPLORE • DREAM • DISCOVER
-              </div>
+                Explore • Dream • Discover
+              </p>
+
             </div>
           </Link>
 
-          {/* ================= DESKTOP NAV ================= */}
-          <nav className="hidden items-center gap-7 lg:flex">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `relative py-2 text-[13px] font-semibold transition-colors ${
-                    scrolled
-                      ? "text-gray-700 hover:text-[#1f5b43]"
-                      : "text-white/95 hover:text-white"
-                  } ${
-                    isActive
-                      ? scrolled
-                        ? "text-[#1f5b43]"
-                        : "text-white"
-                      : ""
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    {item.label}
+          {/* =================================================
+              DESKTOP NAVIGATION
+          ================================================= */}
 
-                    <span
-                      className={`absolute bottom-0 left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-[#e89b36] transition-all ${
-                        isActive ? "w-5" : "w-0"
-                      }`}
+          <nav
+            className={`
+              hidden items-center gap-6
+              lg:flex xl:gap-7
+              ${textClass}
+            `}
+          >
+
+            {/* HOME */}
+
+            <NavLink
+              to="/"
+              label="Home"
+              active={isActive("/")}
+              isHome={isHome}
+            />
+
+            {/* DESTINATIONS */}
+
+            <NavLink
+              to="/explore"
+              label="Destinations"
+              active={isActive("/explore")}
+              isHome={isHome}
+            />
+
+            {/* HOTELS */}
+
+            <NavLink
+              to="/hotels"
+              label="Hotels"
+              active={isActive("/hotels")}
+              isHome={isHome}
+            />
+
+            {/* TRANSPORTATION */}
+
+            <NavLink
+              to="/transportation"
+              label="Transportation"
+              active={isActive("/transportation")}
+              isHome={isHome}
+            />
+
+            {/* BLOG */}
+
+            <NavLink
+              to="/blog"
+              label="Blog"
+              active={isActive("/blog")}
+              isHome={isHome}
+            />
+
+            {/* ABOUT */}
+
+            <NavLink
+              to="/about"
+              label="About"
+              active={isActive("/about")}
+              isHome={isHome}
+            />
+
+            {/* MORE */}
+
+            <div className="relative">
+
+              <button
+                type="button"
+                onClick={() => setMoreOpen((value) => !value)}
+                className={`
+                  flex items-center gap-1 py-7
+                  text-sm font-bold transition
+                  ${hoverClass}
+                `}
+              >
+                More
+
+                <ChevronDown
+                  size={15}
+                  className={`
+                    transition-transform
+                    ${moreOpen ? "rotate-180" : ""}
+                  `}
+                />
+              </button>
+
+              {moreOpen && (
+                <div className="absolute right-0 top-[67px] w-52 overflow-hidden rounded-2xl border border-gray-100 bg-white p-2 shadow-xl">
+
+                  <DropdownLink
+                    to="/restaurants"
+                    label="Restaurants"
+                    onClick={() => setMoreOpen(false)}
+                  />
+
+                  <DropdownLink
+                    to="/booking"
+                    label="Booking"
+                    onClick={() => setMoreOpen(false)}
+                  />
+
+                  <DropdownLink
+                    to="/emergency"
+                    label="Emergency Support"
+                    danger
+                    onClick={() => setMoreOpen(false)}
+                  />
+
+                  {user && (
+                    <DropdownLink
+                      to="/dashboard"
+                      label="Dashboard"
+                      onClick={() => setMoreOpen(false)}
                     />
-                  </>
-                )}
-              </NavLink>
-            ))}
+                  )}
+
+                </div>
+              )}
+
+            </div>
+
           </nav>
 
-          {/* ================= RIGHT SIDE ================= */}
-          <div className="flex items-center gap-2.5">
+          {/* =================================================
+              RIGHT SIDE
+          ================================================= */}
 
-            {/* Search */}
+          <div className="flex items-center gap-1 sm:gap-2">
+
+            {/* SEARCH */}
+
             <button
               type="button"
-              aria-label="Search"
-              className={`hidden h-10 w-10 items-center justify-center rounded-full transition sm:flex ${
-                scrolled
-                  ? "text-gray-700 hover:bg-gray-100"
-                  : "text-white hover:bg-white/15"
-              }`}
+              onClick={() => {
+                setMoreOpen(false);
+                navigate("/explore");
+              }}
+              className={`
+                flex h-10 w-10 items-center justify-center
+                rounded-full transition
+                ${textClass}
+                ${hoverClass}
+              `}
+              aria-label="Search destinations"
             >
-              <Search size={19} />
+              <Search size={21} strokeWidth={2} />
             </button>
 
-            {/* Wishlist */}
-            <Link
-              to="/dashboard/wishlist"
-              aria-label="Wishlist"
-              className={`hidden h-10 w-10 items-center justify-center rounded-full transition sm:flex ${
-                scrolled
-                  ? "text-gray-700 hover:bg-gray-100"
-                  : "text-white hover:bg-white/15"
-              }`}
-            >
-              <Heart size={19} />
-            </Link>
+            {/* HEART */}
 
-            {/* ================= AUTH ================= */}
+            <button
+              type="button"
+              onClick={() => {
+                setMoreOpen(false);
+                navigate("/hotels");
+              }}
+              className={`
+                hidden h-10 w-10 items-center justify-center
+                rounded-full transition sm:flex
+                ${textClass}
+                ${hoverClass}
+              `}
+              aria-label="Explore hotels"
+            >
+              <Heart size={21} strokeWidth={1.8} />
+            </button>
+
+            {/* =================================================
+                NOT LOGGED IN
+            ================================================= */}
+
             {!user ? (
               <div className="hidden items-center gap-2 sm:flex">
+
                 <Link
                   to="/login"
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    scrolled
-                      ? "text-[#1f5b43] hover:bg-[#edf3ee]"
-                      : "text-white hover:bg-white/10"
-                  }`}
+                  className={`
+                    px-3 py-2 text-sm font-bold
+                    transition
+                    ${textClass}
+                    ${hoverClass}
+                  `}
                 >
                   Login
                 </Link>
 
                 <Link
                   to="/register"
-                  className="rounded-full bg-[#e99a36] px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[#d98822] hover:shadow-lg"
+                  className={`
+                    rounded-full px-4 py-2.5
+                    text-sm font-bold transition
+                    ${
+                      isHome
+                        ? "bg-white text-[#1f5b43] hover:bg-white/90"
+                        : "bg-[#1f5b43] text-white hover:bg-[#174a36]"
+                    }
+                  `}
                 >
                   Register
                 </Link>
+
               </div>
             ) : (
-              <div className="hidden items-center gap-2 sm:flex">
+
+              /* =================================================
+                 LOGGED IN
+              ================================================= */
+
+              <div className="hidden items-center gap-2 lg:flex">
+
+                {/* Profile */}
+
                 <Link
                   to="/dashboard/profile"
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 transition ${
-                    scrolled
-                      ? "border-gray-200 bg-white hover:bg-gray-50"
-                      : "border-white/30 bg-white/10 text-white backdrop-blur-md hover:bg-white/20"
-                  }`}
+                  className={`
+                    flex items-center gap-2
+                    rounded-full border px-2 py-1.5
+                    transition
+                    ${
+                      isHome
+                        ? "border-white/30 text-white hover:bg-white/10"
+                        : "border-gray-200 text-[#24352d] hover:bg-[#edf3ee]"
+                    }
+                  `}
                 >
-                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#e5eee7] font-bold text-[#1f5b43]">
+
+                  <div
+                    className={`
+                      flex h-8 w-8 items-center justify-center
+                      overflow-hidden rounded-full
+                      font-bold
+                      ${
+                        isHome
+                          ? "bg-white/20"
+                          : "bg-[#edf3ee] text-[#1f5b43]"
+                      }
+                    `}
+                  >
                     {user.profile_image ? (
                       <img
                         src={user.profile_image}
@@ -206,111 +428,157 @@ useEffect(() => {
                     )}
                   </div>
 
-                  <span
-                    className={`hidden max-w-[100px] truncate text-sm font-semibold xl:block ${
-                      scrolled ? "text-gray-700" : "text-white"
-                    }`}
-                  >
+                  <span className="hidden max-w-[110px] truncate px-1 text-xs font-bold xl:block">
                     {user.full_name || "Traveler"}
                   </span>
+
                 </Link>
+
+                {/* Logout */}
 
                 <button
                   type="button"
                   onClick={handleLogout}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f9ece9] text-[#b64a3b] transition hover:bg-[#b64a3b] hover:text-white"
                   title="Logout"
-                  className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
-                    scrolled
-                      ? "text-gray-600 hover:bg-red-50 hover:text-red-600"
-                      : "text-white hover:bg-white/15"
-                  }`}
+                  aria-label="Logout"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={16} />
                 </button>
+
               </div>
             )}
 
-            {/* Mobile button */}
+            {/* =================================================
+                MOBILE MENU BUTTON
+            ================================================= */}
+
             <button
               type="button"
+              onClick={() => {
+                setMoreOpen(false);
+                setMobileOpen(true);
+              }}
+              className={`
+                flex h-10 w-10 items-center justify-center
+                rounded-full transition
+                lg:hidden
+                ${textClass}
+                ${hoverClass}
+              `}
               aria-label="Open menu"
-              onClick={() => setMobileOpen((prev) => !prev)}
-              className={`flex h-10 w-10 items-center justify-center rounded-full transition lg:hidden ${
-                scrolled
-                  ? "text-gray-700 hover:bg-gray-100"
-                  : "bg-white/10 text-white backdrop-blur-md hover:bg-white/20"
-              }`}
             >
-              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+              <Menu size={25} />
             </button>
+
           </div>
+
         </div>
       </header>
 
-      {/* ================= MOBILE MENU ================= */}
-      {mobileOpen && (
-        <div className="fixed inset-x-0 top-[78px] z-40 border-t border-gray-100 bg-white shadow-xl lg:hidden">
-          <div className="mx-auto max-w-7xl px-5 py-5">
+      {/* =================================================
+          MOBILE SIDEBAR
+      ================================================= */}
 
-            <nav className="flex flex-col">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) =>
-                    `border-b border-gray-100 py-3.5 text-sm font-semibold ${
-                      isActive
-                        ? "text-[#1f5b43]"
-                        : "text-gray-700"
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
-
-            {user ? (
-              <div className="mt-4 flex gap-2">
-                <Link
-                  to="/dashboard"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex-1 rounded-xl bg-[#edf3ee] py-3 text-center text-sm font-bold text-[#1f5b43]"
-                >
-                  Dashboard
-                </Link>
-
-                <button
-                  onClick={handleLogout}
-                  className="rounded-xl bg-red-50 px-5 py-3 text-sm font-bold text-red-600"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="mt-4 flex gap-2">
-                <Link
-                  to="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex-1 rounded-xl border border-[#1f5b43] py-3 text-center text-sm font-bold text-[#1f5b43]"
-                >
-                  Login
-                </Link>
-
-                <Link
-                  to="/register"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex-1 rounded-xl bg-[#1f5b43] py-3 text-center text-sm font-bold text-white"
-                >
-                  Register
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <MobileMenu
+        open={mobileOpen}
+        onClose={closeMobileMenu}
+        user={user}
+        onLogout={handleLogout}
+      />
     </>
+  );
+};
+
+/* =========================================================
+   DESKTOP NAV LINK
+========================================================= */
+
+type NavLinkProps = {
+  to: string;
+  label: string;
+  active: boolean;
+  isHome: boolean;
+};
+
+const NavLink = ({
+  to,
+  label,
+  active,
+  isHome,
+}: NavLinkProps) => {
+  return (
+    <Link
+      to={to}
+      className={`
+        relative py-7 text-sm font-bold transition
+        ${
+          isHome
+            ? "text-white/90 hover:text-white"
+            : "text-[#34463d] hover:text-[#1f5b43]"
+        }
+        ${
+          active
+            ? isHome
+              ? "text-white"
+              : "text-[#1f5b43]"
+            : ""
+        }
+      `}
+    >
+      {label}
+
+      {active && (
+        <span
+          className={`
+            absolute bottom-3 left-1/2
+            h-0.5 w-5
+            -translate-x-1/2 rounded-full
+            ${
+              isHome
+                ? "bg-white"
+                : "bg-[#e99a36]"
+            }
+          `}
+        />
+      )}
+    </Link>
+  );
+};
+
+/* =========================================================
+   DROPDOWN LINK
+========================================================= */
+
+type DropdownLinkProps = {
+  to: string;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+};
+
+const DropdownLink = ({
+  to,
+  label,
+  onClick,
+  danger = false,
+}: DropdownLinkProps) => {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`
+        block rounded-xl px-4 py-3
+        text-sm font-semibold transition
+        ${
+          danger
+            ? "text-[#b64a3b] hover:bg-[#f9ece9]"
+            : "text-gray-700 hover:bg-[#edf3ee] hover:text-[#1f5b43]"
+        }
+      `}
+    >
+      {label}
+    </Link>
   );
 };
 
